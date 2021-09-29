@@ -51,5 +51,5 @@ out/
 .idea/**/gradle.xml
 .idea/**/libraries
 
-src/main/java/plc/homework/
-src/test/java/plc/homework/
+/src/main/java/plc/homework/
+/src/test/java/plc/homework/
