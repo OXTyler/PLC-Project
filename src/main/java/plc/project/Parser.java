@@ -340,6 +340,7 @@ public final class Parser {
      * @return the string with escaped sequences replaced with the actual corresponding char
      */
     private String replaceEscaped(String s) {
+        s = s.replaceAll("\\\\b", "\b");
         s = s.replaceAll("\\\\r", "\r");
         s = s.replaceAll("\\\\n", "\n");
         s = s.replaceAll("\\\\t", "\t");
