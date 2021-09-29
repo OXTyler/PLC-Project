@@ -292,16 +292,16 @@ public final class Parser {
 
         } else if (peek(Token.Type.CHARACTER)) {
 
-            char c = tokens.get(0).getLiteral().charAt(1); // use 1 because literal is in format 'c'
+            char c = replaceEscaped(tokens.get(0).getLiteral()).charAt(1); // use 1 because literal is in format 'c'
             tokens.advance();
-            //TODO: Account for escape characters
             return new Ast.Expression.Literal(c);
 
         } else if (peek(Token.Type.STRING)) {
 
             String s = tokens.get(0).getLiteral();
             s = s.substring(1, s.length() - 1); // trim double quotes
-            // TODO: Account for escape sequences
+            s = replaceEscaped(s);
+
             tokens.advance();
             return new Ast.Expression.Literal(s);
 
@@ -316,7 +316,7 @@ public final class Parser {
             if (match("(")){
                 List<Ast.Expression> args = new ArrayList<Ast.Expression>();
                 if(match(")")) return new Ast.Expression.Function(val.getName(), args);
-                    while(tokens.has(0)){
+                    while (tokens.has(0)) {
                         args.add(parseExpression());
                         if(!match(",")){
                             if(match(")"))return new Ast.Expression.Function(val.getName(), args);
@@ -332,6 +332,21 @@ public final class Parser {
         }
 
         throw new UnsupportedOperationException(); //TODO
+    }
+
+    /**
+     * Replaces all escaped with characters in a string with the actual char
+     * @param s the string whose characters are to be replaced
+     * @return the string with escaped sequences replaced with the actual corresponding char
+     */
+    private String replaceEscaped(String s) {
+        s = s.replaceAll("\\\\r", "\r");
+        s = s.replaceAll("\\\\n", "\n");
+        s = s.replaceAll("\\\\t", "\t");
+        s = s.replaceAll("\\\\'", "'");
+        s = s.replaceAll("\\\\\"", "\"");
+        s = s.replaceAll("\\\\", "\\");
+        return s;
     }
 
     /**
