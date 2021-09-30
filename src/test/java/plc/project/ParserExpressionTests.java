@@ -37,7 +37,22 @@ final class ParserExpressionTests {
                                 new Token(Token.Type.OPERATOR, ";", 6)
                         ),
                         new Ast.Statement.Expression(new Ast.Expression.Function("name", Arrays.asList()))
-                )
+              ),
+                Arguments.of("Variable",
+                        Arrays.asList(
+                                //name();
+                                new Token(Token.Type.IDENTIFIER, "expr", 0),
+                                new Token(Token.Type.OPERATOR, ";", 4)
+                        ),
+                        new Ast.Statement.Expression(new Ast.Expression.Access(Optional.empty(), "expr")
+                        )),
+                Arguments.of("Missing SemiColon",
+                        Arrays.asList(
+                                //name();
+                                new Token(Token.Type.IDENTIFIER, "f", 0)
+                        ),
+                        null
+                  )
         );
     }
 
@@ -61,6 +76,15 @@ final class ParserExpressionTests {
                                 new Ast.Expression.Access(Optional.empty(), "name"),
                                 new Ast.Expression.Access(Optional.empty(), "value")
                         )
+                ),
+                Arguments.of("Missing Value",
+                        Arrays.asList(
+                                //name = value;
+                                new Token(Token.Type.IDENTIFIER, "name", 0),
+                                new Token(Token.Type.OPERATOR, "=", 5),
+                                new Token(Token.Type.OPERATOR, ";", 7)
+                        ),
+                        null
                 )
         );
     }
@@ -130,6 +154,17 @@ final class ParserExpressionTests {
                                 new Ast.Expression.Access(Optional.empty(), "expr1"),
                                 new Ast.Expression.Access(Optional.empty(), "expr2")
                         ))
+                ),
+                Arguments.of("Missing Parenthesis",
+                        Arrays.asList(
+                                //(expr1 + expr2)
+                                new Token(Token.Type.OPERATOR, "(", 0),
+                                new Token(Token.Type.IDENTIFIER, "expr1", 1),
+                                new Token(Token.Type.OPERATOR, "+", 7),
+                                new Token(Token.Type.IDENTIFIER, "expr2", 9)
+
+                        ),
+                        null
                 )
         );
     }
@@ -189,6 +224,14 @@ final class ParserExpressionTests {
                                 new Ast.Expression.Access(Optional.empty(), "expr1"),
                                 new Ast.Expression.Access(Optional.empty(), "expr2")
                         )
+                ),
+                Arguments.of("Missing Operand",
+                        Arrays.asList(
+                                //expr1 * expr2
+                                new Token(Token.Type.IDENTIFIER, "expr1", 0),
+                                new Token(Token.Type.OPERATOR, "-", 6)
+                        ),
+                        null
                 )
         );
     }
@@ -252,6 +295,45 @@ final class ParserExpressionTests {
                                 new Ast.Expression.Access(Optional.empty(), "expr2"),
                                 new Ast.Expression.Access(Optional.empty(), "expr3")
                         ))
+                ),
+                Arguments.of("Trailing Comma",
+                        Arrays.asList(
+                                //name(expr1, expr2, expr3)
+                                new Token(Token.Type.IDENTIFIER, "name", 0),
+                                new Token(Token.Type.OPERATOR, "(", 4),
+                                new Token(Token.Type.IDENTIFIER, "expr1", 5),
+                                new Token(Token.Type.OPERATOR, ",", 10),
+                                new Token(Token.Type.OPERATOR, ")", 11)
+                        ),
+                        null
+                )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void testPriority(String test, List<Token> tokens, Ast.Expression.Binary expected) {
+        test(tokens, expected, Parser::parseExpression);
+    }
+
+    private static Stream<Arguments> testPriority() {
+        return Stream.of(
+                Arguments.of("Equals not Equals",
+                        Arrays.asList(
+                                //expr1 && expr2
+                                new Token(Token.Type.IDENTIFIER, "expr1", 0),
+                                new Token(Token.Type.OPERATOR, "==", 6),
+                                new Token(Token.Type.IDENTIFIER, "expr2", 10),
+                                new Token(Token.Type.IDENTIFIER, "!=", 15),
+                                new Token(Token.Type.IDENTIFIER, "expr3", 17)
+                        ),
+                        new Ast.Expression.Binary("!=",
+                                new Ast.Expression.Binary("==",
+                                new Ast.Expression.Access(Optional.empty(), "expr1"),
+                                new Ast.Expression.Access(Optional.empty(), "expr2")),
+                                new Ast.Expression.Access(Optional.empty(), "expr3")
+                        )
+
                 )
         );
     }
