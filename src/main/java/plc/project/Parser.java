@@ -108,16 +108,16 @@ public final class Parser {
                 // evaluate second expression
                 Ast.Expression secondExp = parseExpression();
                 if(match(";")) return new Ast.Statement.Assignment(firstExp, secondExp);
-                throw new ParserException("Missing semi-colon");
+                throw new ParseException("Missing semi-colon", tokens.index);
             } else{
                 if(match(";")) return new Ast.Statement.Expression(firstExp);
-                throw new ParserException("Missing semi-colon");
+                throw new ParseException("Missing semi-colon", tokens.index);
             }
 
 
         }
 
-        throw new ParserException("Invalid Statement");
+        throw new ParseException("Invalid Statement", tokens.index);
     }
 
     /**
@@ -331,7 +331,7 @@ public final class Parser {
             return val;
         }
 
-        throw new UnsupportedOperationException(); //TODO
+        throw new ParseException("Invalid expression", tokens.index); //TODO
     }
 
     /**
