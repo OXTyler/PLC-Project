@@ -1,10 +1,9 @@
 package plc.project;
 
-import jdk.nashorn.internal.runtime.ParserException;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +21,9 @@ import java.util.Optional;
  * to calling that functions.
  */
 public final class Parser {
+    interface ExpressionParser {
+        public Ast.Expression parse();
+    }
 
     private final TokenStream tokens;
 
@@ -184,76 +186,29 @@ public final class Parser {
     /**
      * Parses the {@code logical-expression} rule.
      */
-    public Ast.Expression parseLogicalExpression(){
-        // parse first expression
-        Ast.Expression firstExp = parseComparisonExpression();
-
-        if(peek("&&") || peek("||")){
-            String operator = tokens.get(0).getLiteral();
-            tokens.advance();
-            Ast.Expression secondExp = parseComparisonExpression();
-            return new Ast.Expression.Binary(operator, firstExp, secondExp);
-        }
-        // check if there's a logical operator
-        // if there's a logical operator, parse second expression
-        // return
-        return firstExp;
+    public Ast.Expression parseLogicalExpression() {
+        return parseRulesForBinaryExpressions(this::parseComparisonExpression, new String[]{"&&", "||"}, new String[]{});
     }
 
     /**
      * Parses the {@code equality-expression} rule.
      */
-    public Ast.Expression parseComparisonExpression(){
-        // parse first expression
-        Ast.Expression firstExp = parseAdditiveExpression();
-
-        if(peek("!=") || peek("==") || peek(">") || peek("<")){
-            String operator = tokens.get(0).getLiteral();
-            tokens.advance();
-            Ast.Expression secondExp = parseAdditiveExpression();
-            return new Ast.Expression.Binary(operator, firstExp, secondExp);
-        }
-        // check if there's a comparison operator
-        // if there's a comparison operator, parse second expression
-        // return
-        return firstExp;
+    public Ast.Expression parseComparisonExpression() {
+        return parseRulesForBinaryExpressions(this::parseAdditiveExpression, new String[]{"!=", "==", ">", "<"}, new String[]{"&&", "||"});
     }
 
     /**
      * Parses the {@code additive-expression} rule.
      */
     public Ast.Expression parseAdditiveExpression(){
-        // parse first expression
-        Ast.Expression firstExp = parseMultiplicativeExpression();
-
-        if(peek("-") || peek("+")){
-            String operator = tokens.get(0).getLiteral();
-            tokens.advance();
-            Ast.Expression secondExp = parseMultiplicativeExpression();
-            return new Ast.Expression.Binary(operator, firstExp, secondExp);
-        }
-        // check if there's an additive operator
-        // if there's an additive operator, parse second expression
-        // return
-        return firstExp;
+        return parseRulesForBinaryExpressions(this::parseMultiplicativeExpression, new String[]{"+", "-"}, new String[]{"&&", "||", "!=", "==", ">", "<"});
     }
 
     /**
      * Parses the {@code multiplicative-expression} rule.
      */
     public Ast.Expression parseMultiplicativeExpression() throws ParseException {
-        // parse first expression
-        Ast.Expression firstExp = parsePrimaryExpression();
-        if(peek("^") || peek("*") || peek("/")){
-            String operator = tokens.get(0).getLiteral();
-            tokens.advance();
-            Ast.Expression secondExp = parsePrimaryExpression();
-            return new Ast.Expression.Binary(operator, firstExp, secondExp);
-        }
-        // check if there's a multiplicative operator
-        // if there's a multiplicative operator, parse second expression
-        // return
-        return firstExp;
+        return parseRulesForBinaryExpressions(this::parsePrimaryExpression, new String[]{"^", "*", "/"}, new String[]{"&&", "||", "!=", "==", ">", "<", "+", "-"});
     }
 
     /**
@@ -332,6 +287,46 @@ public final class Parser {
         }
 
         throw new ParseException("Invalid expression", tokens.index); //TODO
+    }
+
+    /**
+     * Returns the expression for rules for binary expressions (parseLogicalExpression, parseAdditiveExpression, etc)
+     *
+     * @param next the next expression parser function
+     * @param operators the operators of the current rule
+     * @param lowerOperators the lower precedent operators of the current rule
+     * @return the expression
+     */
+    private Ast.Expression parseRulesForBinaryExpressions(ExpressionParser next, String[] operators, String[] lowerOperators) {
+        Ast.Expression exp = next.parse();
+        // check if there's an operator
+        for (String operator : operators) {
+            if (peek(operator)) {
+                tokens.advance();
+
+                Ast.Expression right = parseExpression();
+
+                if (right instanceof Ast.Expression.Binary) {
+                    String rightOperator = ((Ast.Expression.Binary) right).getOperator();
+                    Ast.Expression rightRight = ((Ast.Expression.Binary) right).getRight();
+                    Ast.Expression rightLeft = ((Ast.Expression.Binary) right).getLeft();
+                    // merge operator arrays
+                    List<String> equalOrLowerPriority = new ArrayList<>(Arrays.asList(operators));
+                    equalOrLowerPriority.addAll(Arrays.asList(lowerOperators));
+
+                    for (String o : equalOrLowerPriority) { // if right operator is of equal or lower priority
+                        if (rightOperator.equals(o)) {
+                            Ast.Expression.Binary left = new Ast.Expression.Binary(operator, exp, rightLeft);
+                            return new Ast.Expression.Binary(rightOperator, left, rightRight);
+                        }
+                    }
+                }
+
+                return new Ast.Expression.Binary(operator, exp, right);
+            }
+        }
+
+        return exp;
     }
 
     /**
