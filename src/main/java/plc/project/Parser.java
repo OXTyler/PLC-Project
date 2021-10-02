@@ -106,20 +106,20 @@ public final class Parser {
             // first evaluate first expression
             Ast.Expression firstExp = parseExpression();
             // check if there's an equals sign
-            if (match("=")) { // TODO: idk if this is actually the right way to do it
+            if (match("=")) {
                 // evaluate second expression
                 Ast.Expression secondExp = parseExpression();
                 if(match(";")) return new Ast.Statement.Assignment(firstExp, secondExp);
-                throw new ParseException("Missing semi-colon", tokens.index);
+                throw new ParseException("Missing semi-colon", tokens.get(0).getIndex());
             } else{
                 if(match(";")) return new Ast.Statement.Expression(firstExp);
-                throw new ParseException("Missing semi-colon", tokens.index);
+                throw new ParseException("Missing semi-colon", tokens.get(0).getIndex());
             }
 
 
         }
 
-        throw new ParseException("Invalid Statement", tokens.index);
+        throw new ParseException("Invalid Statement", tokens.get(0).getIndex());
     }
 
     /**
@@ -275,7 +275,7 @@ public final class Parser {
                         args.add(parseExpression());
                         if(!match(",")){
                             if(match(")"))return new Ast.Expression.Function(val.getName(), args);
-                            throw new ParseException("Invalid arguments", tokens.index);
+                            throw new ParseException("Invalid arguments", tokens.get(0).getIndex());
                         }
                     }
 
@@ -286,7 +286,9 @@ public final class Parser {
             return val;
         }
 
-        throw new ParseException("Invalid expression", tokens.index); //TODO
+        if(tokens.has(0)) throw new ParseException("Invalid expression", tokens.get(0).getIndex()); //in case its missing at the end
+        throw new ParseException("Invalid expression", tokens.get(-1).getIndex());
+
     }
 
     /**
@@ -301,8 +303,7 @@ public final class Parser {
         Ast.Expression exp = next.parse();
         // check if there's an operator
         for (String operator : operators) {
-            if (peek(operator)) {
-                tokens.advance();
+            if (match(operator)) {
 
                 Ast.Expression right = parseExpression();
 

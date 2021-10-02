@@ -113,6 +113,10 @@ final class ParserExpressionTests {
                         Arrays.asList(new Token(Token.Type.CHARACTER, "'c'", 0)),
                         new Ast.Expression.Literal('c')
                 ),
+                Arguments.of("escape Char",
+                            Arrays.asList(new Token(Token.Type.CHARACTER, "'\\n'", 0)),
+                            new Ast.Expression.Literal('\n')
+                        ),
                 Arguments.of("String Literal",
                         Arrays.asList(new Token(Token.Type.STRING, "\"string\"", 0)),
                         new Ast.Expression.Literal("string")
@@ -334,7 +338,61 @@ final class ParserExpressionTests {
                                 new Ast.Expression.Access(Optional.empty(), "expr3")
                         )
 
+                ),
+                Arguments.of("Multiply or add",
+                    Arrays.asList(
+                            new Token(Token.Type.IDENTIFIER, "x", 0),
+                            new Token(Token.Type.OPERATOR, "+", 1),
+                            new Token(Token.Type.INTEGER, "10", 2),
+                            new Token(Token.Type.OPERATOR, "||", 4),
+                            new Token(Token.Type.IDENTIFIER, "y", 6),
+                            new Token(Token.Type.OPERATOR, "*", 7),
+                            new Token(Token.Type.IDENTIFIER, "z", 8)
+                    ),
+                        new Ast.Expression.Binary("||",
+                                    new Ast.Expression.Binary("+",
+                                            new Ast.Expression.Access(Optional.empty(), "x"),
+                                            new Ast.Expression.Literal("10")),
+                                    new Ast.Expression.Binary("*",
+                                            new Ast.Expression.Access(Optional.empty(), "y"),
+                                            new Ast.Expression.Access(Optional.empty(), "z"))
+                            )
                 )
+
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void ErrorHandling(String test, List<Token> tokens, Ast.Expression expected) {
+        test(tokens, expected, Parser::parseExpression);
+    }
+
+    private static Stream<Arguments> ErrorHandling() {
+        return Stream.of(
+                Arguments.of("invalid Expression",
+                        Arrays.asList(
+                            new Token(Token.Type.OPERATOR, "?", 0)
+                        ),
+                        null
+                ),
+                Arguments.of("Missing Closing Parenthesis",
+                        Arrays.asList(
+                                new Token(Token.Type.OPERATOR, "(", 0),
+                                new Token(Token.Type.IDENTIFIER, "expr", 1)
+                        ),
+                        null
+                ),
+                Arguments.of("Invalid Closing Parenthesis",
+                        Arrays.asList(
+                                new Token(Token.Type.OPERATOR, "(", 0),
+                                new Token(Token.Type.IDENTIFIER, "expr", 1),
+                                new Token(Token.Type.OPERATOR, "]", 5)
+                        ),
+                        null
+                )
+
+
         );
     }
 
