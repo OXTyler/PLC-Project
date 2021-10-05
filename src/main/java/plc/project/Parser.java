@@ -111,10 +111,30 @@ public final class Parser {
             if (match(";")) {
                 return new Ast.Statement.Declaration(name, Optional.ofNullable(exp));
             }
-            
+
             throw new ParseException("Semi-colon expected", tokens.index);
-        } else if (peek("SWITCH")) {
-            // TODO
+        } else if (match("SWITCH")) { // TODO: Test this when block is implemented
+            Ast.Expression condition = parseExpression();
+
+            ArrayList<Ast.Statement.Case> cases = new ArrayList<>();
+
+            while(peek("CASE")) {
+                Ast.Expression exp = parseExpression();
+
+                if (!match(":")) {
+                    throw new ParseException("':' expected", tokens.index);
+                }
+
+                List<Ast.Statement> block = parseBlock();
+
+                cases.add(new Ast.Statement.Case(Optional.of(exp), block));
+            }
+
+            if (match(";")) {
+                return new Ast.Statement.Switch(condition, cases);
+            }
+
+            throw new ParseException("';' expected", tokens.index);
         } else if (peek("IF")) {
             // TODO
         } else if (peek("WHILE")) {
