@@ -96,7 +96,7 @@ public final class Parser {
             String name = "";
 
             if (!peek(Token.Type.IDENTIFIER)) {
-                throw new ParseException("An identifier is needed after LET", tokens.index - 1);
+                throw new ParseException("An identifier is needed after LET", tokens.index);
             }
 
             name = tokens.get(0).getLiteral();
@@ -111,7 +111,8 @@ public final class Parser {
             if (match(";")) {
                 return new Ast.Statement.Declaration(name, Optional.ofNullable(exp));
             }
-
+            
+            throw new ParseException("Semi-colon expected", tokens.index);
         } else if (peek("SWITCH")) {
             // TODO
         } else if (peek("IF")) {
