@@ -92,8 +92,26 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Statement parseStatement() throws ParseException {
-        if (peek("LET")) {
-            // TODO
+        if (match("LET")) {
+            String name = "";
+
+            if (!peek(Token.Type.IDENTIFIER)) {
+                throw new ParseException("An identifier is needed after LET", tokens.index - 1);
+            }
+
+            name = tokens.get(0).getLiteral();
+            tokens.advance();
+
+            Ast.Expression exp = null;
+
+            if (match("=")) {
+                exp = parseExpression();
+            }
+
+            if (match(";")) {
+                return new Ast.Statement.Declaration(name, Optional.ofNullable(exp));
+            }
+
         } else if (peek("SWITCH")) {
             // TODO
         } else if (peek("IF")) {
