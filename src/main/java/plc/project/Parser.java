@@ -93,34 +93,15 @@ public final class Parser {
      */
     public Ast.Statement parseStatement() throws ParseException {
         if (match("LET")) {
-            String name = "";
-
-            if (!peek(Token.Type.IDENTIFIER)) {
-                throw new ParseException("An identifier is needed after LET", tokens.index);
-            }
-
-            name = tokens.get(0).getLiteral();
-            tokens.advance();
-
-            Ast.Expression exp = null;
-
-            if (match("=")) {
-                exp = parseExpression();
-            }
-
-            if (match(";")) {
-                return new Ast.Statement.Declaration(name, Optional.ofNullable(exp));
-            }
-
-            throw new ParseException("Semi-colon expected", tokens.index);
-        } else if (match("SWITCH")) { // TODO: Test this when block is implemented
+            return parseDeclarationStatement();
+        } else if (match("SWITCH")) {
            return parseSwitchStatement();
         } else if (peek("IF")) {
-            // TODO
+            return parseIfStatement();
         } else if (peek("WHILE")) {
-            // TODO
+            return parseWhileStatement();
         } else if (peek("RETURN")) {
-            // TODO
+            return parseReturnStatement();
         } else {
             // first evaluate first expression
             Ast.Expression firstExp = parseExpression();
@@ -137,8 +118,6 @@ public final class Parser {
 
 
         }
-
-        throw new ParseException("Invalid Statement", tokens.get(0).getIndex());
     }
 
     /**
@@ -147,7 +126,26 @@ public final class Parser {
      * statement, aka {@code LET}.
      */
     public Ast.Statement.Declaration parseDeclarationStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        String name = "";
+
+        if (!peek(Token.Type.IDENTIFIER)) {
+            throw new ParseException("An identifier is needed after LET", tokens.index);
+        }
+
+        name = tokens.get(0).getLiteral();
+        tokens.advance();
+
+        Ast.Expression exp = null;
+
+        if (match("=")) {
+            exp = parseExpression();
+        }
+
+        if (match(";")) {
+            return new Ast.Statement.Declaration(name, Optional.ofNullable(exp));
+        }
+
+        throw new ParseException("Semi-colon expected", tokens.index);
     }
 
     /**
