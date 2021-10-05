@@ -114,27 +114,7 @@ public final class Parser {
 
             throw new ParseException("Semi-colon expected", tokens.index);
         } else if (match("SWITCH")) { // TODO: Test this when block is implemented
-            Ast.Expression condition = parseExpression();
-
-            ArrayList<Ast.Statement.Case> cases = new ArrayList<>();
-
-            while(peek("CASE")) {
-                Ast.Expression exp = parseExpression();
-
-                if (!match(":")) {
-                    throw new ParseException("':' expected", tokens.index);
-                }
-
-                List<Ast.Statement> block = parseBlock();
-
-                cases.add(new Ast.Statement.Case(Optional.of(exp), block));
-            }
-
-            if (match(";")) {
-                return new Ast.Statement.Switch(condition, cases);
-            }
-
-            throw new ParseException("';' expected", tokens.index);
+           return parseSwitchStatement();
         } else if (peek("IF")) {
             // TODO
         } else if (peek("WHILE")) {
@@ -184,8 +164,30 @@ public final class Parser {
      * should only be called if the next tokens start a switch statement, aka
      * {@code SWITCH}.
      */
-    public Ast.Statement.Switch parseSwitchStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+    public Ast.Statement.Switch parseSwitchStatement() throws ParseException { // TODO: Test this when parseBlock() is implemented
+        Ast.Expression condition = parseExpression();
+
+        ArrayList<Ast.Statement.Case> cases = new ArrayList<>();
+
+        while (peek("CASE")) {
+            cases.add(parseCaseStatement());
+        }
+
+        if (cases.isEmpty()) {
+            throw new ParseException("CASE expected", tokens.index);
+        }
+
+        if (!match("DEFAULT")) {
+            throw new ParseException("\"DEFAULT\" expected", tokens.index);
+        }
+
+        cases.add(parseCaseStatement());
+
+        if (!match("END")) {
+            throw new ParseException("\"END\" expected", tokens.index);
+        }
+
+        return new Ast.Statement.Switch(condition, cases);
     }
 
     /**
@@ -194,7 +196,13 @@ public final class Parser {
      * default block of a switch statement, aka {@code CASE} or {@code DEFAULT}.
      */
     public Ast.Statement.Case parseCaseStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expression exp = parseExpression();
+
+        if (!match(":")) {
+            throw new ParseException("':' expected",tokens.index);
+        }
+
+        return new Ast.Statement.Case(Optional.of(exp), parseBlock());
     }
 
     /**
