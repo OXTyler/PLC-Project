@@ -96,11 +96,11 @@ public final class Parser {
             return parseDeclarationStatement();
         } else if (match("SWITCH")) {
            return parseSwitchStatement();
-        } else if (peek("IF")) {
+        } else if (match("IF")) {
             return parseIfStatement();
-        } else if (peek("WHILE")) {
+        } else if (match("WHILE")) {
             return parseWhileStatement();
-        } else if (peek("RETURN")) {
+        } else if (match("RETURN")) {
             return parseReturnStatement();
         } else {
             // first evaluate first expression
