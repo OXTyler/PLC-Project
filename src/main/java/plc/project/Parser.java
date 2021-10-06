@@ -255,7 +255,13 @@ public final class Parser {
      * {@code RETURN}.
      */
     public Ast.Statement.Return parseReturnStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expression value = parseExpression();
+
+        if (!match(";")) {
+            throw new ParseException("\";\" Expected", tokens.index);
+        }
+
+        return new Ast.Statement.Return(value);
     }
 
     /**
