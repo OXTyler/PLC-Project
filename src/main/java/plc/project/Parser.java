@@ -1,5 +1,6 @@
 package plc.project;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -83,7 +84,13 @@ public final class Parser {
      * preceding token indicates the opening a block.
      */
     public List<Ast.Statement> parseBlock() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        List<Ast.Statement> statements = new ArrayList<>();
+
+        while (!(peek("END") || peek("CASE") || peek("DEFAULT") || peek("ELSE"))) {
+            statements.add(parseStatement());
+        }
+
+        return statements;
     }
 
     /**
@@ -154,7 +161,25 @@ public final class Parser {
      * {@code IF}.
      */
     public Ast.Statement.If parseIfStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expression condition = parseExpression();
+
+        if (!match("DO")) {
+            throw new ParseException("\"DO\" Expected", tokens.index);
+        }
+
+        List<Ast.Statement> thenStatements = parseBlock();
+
+        List<Ast.Statement> elseStatements = new ArrayList<>();
+
+        if (match("ELSE")) {
+            elseStatements = parseBlock();
+        }
+
+        if (!match("END")) {
+            throw new ParseException("\"END\" Expected", tokens.index);
+        }
+
+        return new Ast.Statement.If(condition, thenStatements, elseStatements);
     }
 
     /**
