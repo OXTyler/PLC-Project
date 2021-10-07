@@ -36,7 +36,11 @@ public final class Parser {
      * Parses the {@code source} rule.
      */
     public Ast.Source parseSource() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        List<Ast.Global> globals = new ArrayList<>();
+        List<Ast.Function> functions = new ArrayList<>();
+        while(peek("LIST") || peek("VAR") || peek("VAL")) globals.add(parseGlobal());
+        while(match("FUN")) functions.add(parseFunction());
+        return new Ast.Source(globals, functions);
     }
 
     /**
@@ -44,7 +48,12 @@ public final class Parser {
      * next tokens start a field, aka {@code LET}.
      */
     public Ast.Global parseGlobal() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Global val = null;
+        if(match("LIST")) val = parseList();
+        else if(match("VAR")) val = parseMutable();
+       else if(match("VAL")) val = parseImmutable();
+       if(match(";") && val != null) return val;
+       throw new ParseException("invalid Global", tokens.get(0).getIndex());
     }
 
     /**
@@ -60,7 +69,19 @@ public final class Parser {
      * next token declares a mutable global variable, aka {@code VAR}.
      */
     public Ast.Global parseMutable() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        String name = null;
+        Ast.Expression value = null;
+        if(peek(Token.Type.IDENTIFIER)) {
+            name = tokens.get(0).getLiteral();
+            tokens.advance();
+        }
+        else throw new ParseException("Invalid mutable", tokens.get(0).getIndex());
+        if(match("=")) {
+            value = parseExpression();
+            return new Ast.Global(name, true, Optional.of(value));
+        }
+        return new Ast.Global(name, true, Optional.empty());
+
     }
 
     /**
@@ -68,7 +89,15 @@ public final class Parser {
      * next token declares an immutable global variable, aka {@code VAL}.
      */
     public Ast.Global parseImmutable() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        String name = null;
+        Ast.Expression value = null;
+       if(peek(Token.Type.IDENTIFIER, "=")){
+            name = tokens.get(0).getLiteral();
+            match(Token.Type.IDENTIFIER, "=");
+            value = parseExpression();
+           return new Ast.Global(name, false, Optional.of(value));
+       }
+       throw new ParseException("Invalid Immutable", tokens.get(0).getIndex());
     }
 
     /**
@@ -76,7 +105,45 @@ public final class Parser {
      * next tokens start a method, aka {@code DEF}.
      */
     public Ast.Function parseFunction() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        String name = null;
+        List<String> parameters = new ArrayList<>();
+        List<Ast.Statement> statements = new ArrayList<>();
+
+        if (peek(Token.Type.IDENTIFIER, "(")){
+
+            name = tokens.get(0).getLiteral();
+            match(Token.Type.IDENTIFIER, "(");
+            if (!match(")")) {
+
+                if (!peek(Token.Type.IDENTIFIER)) throw new ParseException("Invalid Function", tokens.get(0).getIndex());
+                parameters.add(tokens.get(0).getLiteral());
+                tokens.advance();
+
+                while (peek(Token.Type.IDENTIFIER, ",")) {
+
+                    parameters.add(tokens.get(0).getLiteral());
+                    match(Token.Type.IDENTIFIER, ",");
+
+                }
+
+                if (!peek(Token.Type.IDENTIFIER)) throw new ParseException("Invalid Function", tokens.get(0).getIndex());
+
+                parameters.add(tokens.get(0).getLiteral());
+                tokens.advance();
+
+            }
+            if (!match("DO")) throw new ParseException("Missing DO", tokens.get(0).getIndex());
+
+            statements = parseBlock();
+
+            if (match("END")) return new Ast.Function(name, parameters, statements);
+
+            throw new ParseException("Missing END", tokens.get(0).getIndex());
+
+
+        }
+
+        throw new ParseException("Invalid Function", tokens.get(0).getIndex());
     }
 
     /**
