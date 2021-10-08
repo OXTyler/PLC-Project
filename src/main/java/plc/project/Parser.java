@@ -61,7 +61,26 @@ public final class Parser {
      * next token declares a list, aka {@code LIST}.
      */
     public Ast.Global parseList() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        if (!peek(Token.Type.IDENTIFIER)) throw new ParseException("Identifier Expected", tokens.get(0).getIndex());
+
+        String name = tokens.get(0).getLiteral();
+        tokens.advance();
+
+        if (!match("=")) throw new ParseException("'=' Expected", tokens.get(0).getIndex());
+        if (!match("[")) throw new ParseException("'[' Expected", tokens.get(0).getIndex());
+
+        ArrayList<Ast.Expression> values = new ArrayList<>();
+
+        while (peek(Token.Type.IDENTIFIER, ",")) {
+            values.add(parseExpression());
+            match(Token.Type.IDENTIFIER, ",");
+        }
+
+        values.add(parseExpression());
+
+        if (!match("]")) throw new ParseException("']' Expected", tokens.get(0).getIndex());
+
+        return new Ast.Global(name, true, Optional.of(new Ast.Expression.PlcList(values)));
     }
 
     /**

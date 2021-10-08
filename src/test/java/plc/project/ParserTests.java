@@ -64,7 +64,24 @@ final class ParserTests {
                                         new Ast.Statement.Expression(new Ast.Expression.Access(Optional.empty(), "stmt"))
                                 )))
                         )
+                ),
+                Arguments.of("List",
+                        Arrays.asList(
+                                //LIST list = [expr];
+                                new Token(Token.Type.IDENTIFIER, "LIST", 0),
+                                new Token(Token.Type.IDENTIFIER, "list", 5),
+                                new Token(Token.Type.OPERATOR, "=", 10),
+                                new Token(Token.Type.OPERATOR, "[", 12),
+                                new Token(Token.Type.IDENTIFIER, "expr", 13),
+                                new Token(Token.Type.OPERATOR, "]", 17),
+                                new Token(Token.Type.OPERATOR, ";", 18)
+                        ),
+                        new Ast.Source(
+                                Arrays.asList(new Ast.Global("list", true, Optional.of(new Ast.Expression.PlcList(Arrays.asList(new Ast.Expression.Access(Optional.empty(), "expr")))))),
+                                Arrays.asList()
+                        )
                 )
+                // TODO: Test list with multiple expressions
         );
     }
 
