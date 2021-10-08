@@ -50,10 +50,10 @@ public final class Parser {
     public Ast.Global parseGlobal() throws ParseException {
         Ast.Global val = null;
         if(match("LIST")) val = parseList();
-        else if(match("VAR")) val = parseMutable();
-       else if(match("VAL")) val = parseImmutable();
-       if(match(";") && val != null) return val;
-       throw new ParseException("invalid Global", tokens.get(0).getIndex());
+        else if (match("VAR")) val = parseMutable();
+        else if (match("VAL")) val = parseImmutable();
+        if(match(";") && val != null) return val;
+        throw new ParseException("invalid Global", tokens.get(0).getIndex());
     }
 
     /**
@@ -71,12 +71,12 @@ public final class Parser {
     public Ast.Global parseMutable() throws ParseException {
         String name = null;
         Ast.Expression value = null;
-        if(peek(Token.Type.IDENTIFIER)) {
+        if (peek(Token.Type.IDENTIFIER)) {
             name = tokens.get(0).getLiteral();
             tokens.advance();
         }
         else throw new ParseException("Invalid mutable", tokens.get(0).getIndex());
-        if(match("=")) {
+        if (match("=")) {
             value = parseExpression();
             return new Ast.Global(name, true, Optional.of(value));
         }
@@ -91,7 +91,7 @@ public final class Parser {
     public Ast.Global parseImmutable() throws ParseException {
         String name = null;
         Ast.Expression value = null;
-       if(peek(Token.Type.IDENTIFIER, "=")){
+        if (peek(Token.Type.IDENTIFIER, "=")) {
             name = tokens.get(0).getLiteral();
             match(Token.Type.IDENTIFIER, "=");
             value = parseExpression();
@@ -109,7 +109,7 @@ public final class Parser {
         List<String> parameters = new ArrayList<>();
         List<Ast.Statement> statements = new ArrayList<>();
 
-        if (peek(Token.Type.IDENTIFIER, "(")){
+        if (peek(Token.Type.IDENTIFIER, "(")) {
 
             name = tokens.get(0).getLiteral();
             match(Token.Type.IDENTIFIER, "(");
@@ -183,12 +183,11 @@ public final class Parser {
             if (match("=")) {
                 // evaluate second expression
                 Ast.Expression secondExp = parseExpression();
-                if(match(";")) return new Ast.Statement.Assignment(firstExp, secondExp);
-                throw new ParseException("Missing semi-colon", tokens.get(0).getIndex());
+                if (match(";")) return new Ast.Statement.Assignment(firstExp, secondExp);
             } else{
-                if(match(";")) return new Ast.Statement.Expression(firstExp);
-                throw new ParseException("Missing semi-colon", tokens.get(0).getIndex());
+                if (match(";")) return new Ast.Statement.Expression(firstExp);
             }
+            throw new ParseException("Missing semi-colon", tokens.get(0).getIndex());
 
 
         }
