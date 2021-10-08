@@ -253,21 +253,13 @@ public final class Parser {
      * should only be called if the next tokens start a switch statement, aka
      * {@code SWITCH}.
      */
-    public Ast.Statement.Switch parseSwitchStatement() throws ParseException { // TODO: Test this when parseBlock() is implemented
+    public Ast.Statement.Switch parseSwitchStatement() throws ParseException {
         Ast.Expression condition = parseExpression();
 
         ArrayList<Ast.Statement.Case> cases = new ArrayList<>();
 
         while (peek("CASE")) {
             cases.add(parseCaseStatement());
-        }
-
-        if (cases.isEmpty()) {
-            throw new ParseException("CASE expected", tokens.get(0).getIndex());
-        }
-
-        if (!match("DEFAULT")) {
-            throw new ParseException("\"DEFAULT\" expected", tokens.get(0).getIndex());
         }
 
         cases.add(parseCaseStatement());
@@ -285,13 +277,21 @@ public final class Parser {
      * default block of a switch statement, aka {@code CASE} or {@code DEFAULT}.
      */
     public Ast.Statement.Case parseCaseStatement() throws ParseException {
-        Ast.Expression exp = parseExpression();
 
-        if (!match(":")) {
-            throw new ParseException("':' expected",tokens.get(0).getIndex());
+        if (match("CASE")) {
+            Ast.Expression condition = parseExpression();
+
+            if (!match(":")) {
+                throw new ParseException("':' expected",tokens.get(0).getIndex());
+            }
+
+            return new Ast.Statement.Case(Optional.of(condition), parseBlock());
+        } else {
+            if (!match("DEFAULT")) {
+                throw new ParseException("DEFAULT expected", tokens.get(0).getIndex());
+            }
+            return new Ast.Statement.Case(Optional.empty(), parseBlock());
         }
-
-        return new Ast.Statement.Case(Optional.of(exp), parseBlock());
     }
 
     /**
