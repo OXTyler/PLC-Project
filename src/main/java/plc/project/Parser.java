@@ -218,7 +218,7 @@ public final class Parser {
             return new Ast.Statement.Declaration(name, Optional.ofNullable(exp));
         }
 
-        throw new ParseException("Semi-colon expected", tokens.index);
+        throw new ParseException("Semi-colon expected", tokens.get(0).getIndex());
     }
 
     /**
@@ -230,7 +230,7 @@ public final class Parser {
         Ast.Expression condition = parseExpression();
 
         if (!match("DO")) {
-            throw new ParseException("\"DO\" Expected", tokens.index);
+            throw new ParseException("\"DO\" Expected", tokens.get(0).getIndex());
         }
 
         List<Ast.Statement> thenStatements = parseBlock();
@@ -242,7 +242,7 @@ public final class Parser {
         }
 
         if (!match("END")) {
-            throw new ParseException("\"END\" Expected", tokens.index);
+            throw new ParseException("\"END\" Expected", tokens.get(0).getIndex());
         }
 
         return new Ast.Statement.If(condition, thenStatements, elseStatements);
@@ -263,17 +263,17 @@ public final class Parser {
         }
 
         if (cases.isEmpty()) {
-            throw new ParseException("CASE expected", tokens.index);
+            throw new ParseException("CASE expected", tokens.get(0).getIndex());
         }
 
         if (!match("DEFAULT")) {
-            throw new ParseException("\"DEFAULT\" expected", tokens.index);
+            throw new ParseException("\"DEFAULT\" expected", tokens.get(0).getIndex());
         }
 
         cases.add(parseCaseStatement());
 
         if (!match("END")) {
-            throw new ParseException("\"END\" expected", tokens.index);
+            throw new ParseException("\"END\" expected", tokens.get(0).getIndex());
         }
 
         return new Ast.Statement.Switch(condition, cases);
@@ -288,7 +288,7 @@ public final class Parser {
         Ast.Expression exp = parseExpression();
 
         if (!match(":")) {
-            throw new ParseException("':' expected",tokens.index);
+            throw new ParseException("':' expected",tokens.get(0).getIndex());
         }
 
         return new Ast.Statement.Case(Optional.of(exp), parseBlock());
@@ -303,13 +303,13 @@ public final class Parser {
         Ast.Expression condition = parseExpression();
 
         if (!match("DO")) {
-            throw new ParseException("\"DO\" Expected", tokens.index);
+            throw new ParseException("\"DO\" Expected", tokens.get(0).getIndex());
         }
 
         List<Ast.Statement> statements = parseBlock();
 
         if (!match("END")) {
-            throw new ParseException("\"END\" Expected", tokens.index);
+            throw new ParseException("\"END\" Expected", tokens.get(0).getIndex());
         }
 
         return new Ast.Statement.While(condition, statements);
@@ -324,7 +324,7 @@ public final class Parser {
         Ast.Expression value = parseExpression();
 
         if (!match(";")) {
-            throw new ParseException("\";\" Expected", tokens.index);
+            throw new ParseException("\";\" Expected", tokens.get(0).getIndex());
         }
 
         return new Ast.Statement.Return(value);
