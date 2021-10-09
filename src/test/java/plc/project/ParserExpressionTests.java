@@ -118,8 +118,8 @@ final class ParserExpressionTests {
                             new Ast.Expression.Literal('\n')
                         ),
                 Arguments.of("String Literal",
-                        Arrays.asList(new Token(Token.Type.STRING, "\"string\"", 0)),
-                        new Ast.Expression.Literal("string")
+                        Arrays.asList(new Token(Token.Type.STRING, "\"\\\\string\\\\\"", 0)),
+                        new Ast.Expression.Literal("\\string\\")
                 ),
                 Arguments.of("Escape Character",
                         Arrays.asList(new Token(Token.Type.STRING, "\"Hello,\\nWorld!\"", 0)),

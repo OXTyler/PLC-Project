@@ -529,7 +529,7 @@ public final class Parser {
         s = s.replaceAll("\\\\t", "\t");
         s = s.replaceAll("\\\\'", "'");
         s = s.replaceAll("\\\\\"", "\"");
-        s = s.replaceAll("\\\\", "\\");
+        s = s.replaceAll("\\\\\\\\", "\\\\");
         return s;
     }
 
