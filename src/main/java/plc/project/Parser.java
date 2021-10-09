@@ -73,7 +73,7 @@ public final class Parser {
 
         while (peek(Token.Type.IDENTIFIER, ",")) {
             values.add(parseExpression());
-            match(Token.Type.IDENTIFIER, ",");
+            tokens.advance();
         }
 
         values.add(parseExpression());

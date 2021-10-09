@@ -81,8 +81,31 @@ final class ParserTests {
                                 Arrays.asList(new Ast.Global("list", true, Optional.of(new Ast.Expression.PlcList(Arrays.asList(new Ast.Expression.Access(Optional.empty(), "expr")))))),
                                 Arrays.asList()
                         )
+                ),
+                Arguments.of("Multi-List",
+                        Arrays.asList(
+                                //LIST list = [expr1, expr2, expr3];
+                                new Token(Token.Type.IDENTIFIER, "LIST", 0),
+                                new Token(Token.Type.IDENTIFIER, "list", 5),
+                                new Token(Token.Type.OPERATOR, "=", 10),
+                                new Token(Token.Type.OPERATOR, "[", 12),
+                                new Token(Token.Type.IDENTIFIER, "expr1", 13),
+                                new Token(Token.Type.IDENTIFIER, ",", 18),
+                                new Token(Token.Type.IDENTIFIER, "expr2", 20),
+                                new Token(Token.Type.IDENTIFIER, ",", 25),
+                                new Token(Token.Type.IDENTIFIER, "expr3", 27),
+                                new Token(Token.Type.OPERATOR, "]", 32),
+                                new Token(Token.Type.OPERATOR, ";", 33)
+                        ),
+                        new Ast.Source(
+                                Arrays.asList(new Ast.Global("list", true, Optional.of(new Ast.Expression.PlcList(Arrays.asList(
+                                        new Ast.Expression.Access(Optional.empty(), "expr1"),
+                                        new Ast.Expression.Access(Optional.empty(), "expr2"),
+                                        new Ast.Expression.Access(Optional.empty(), "expr3")
+                                ))))),
+                                Arrays.asList()
+                        )
                 )
-                // TODO: Test list with multiple expressions
         );
     }
 
