@@ -63,8 +63,8 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Statement.Assignment ast) {
-
-        scope.lookupVariable(ast.getReceiver().toString()).setValue(visit(ast.getValue()));
+        Ast.Expression.Access var = requireType(Ast.Expression.Access.class, Environment.create(ast.getReceiver()));
+        scope.lookupVariable(var.getName()).setValue(visit(ast.getValue()));
         return Environment.NIL;
     }
 
