@@ -63,7 +63,9 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Statement.Assignment ast) {
-        throw new UnsupportedOperationException(); //TODO
+
+        scope.lookupVariable(ast.getReceiver().toString()).setValue(visit(ast.getValue()));
+        return Environment.NIL;
     }
 
     @Override
@@ -101,7 +103,8 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expression.Literal ast) {
-        throw new UnsupportedOperationException(); //TODO
+
+        return Environment.create(ast.getLiteral());
     }
 
     @Override
