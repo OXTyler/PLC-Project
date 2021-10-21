@@ -1,10 +1,12 @@
 package plc.project;
 
+import javax.swing.text.html.Option;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
@@ -30,7 +32,12 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Global ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getValue().equals(Optional.empty())){
+            scope.defineVariable(ast.getName(), ast.getMutable(), Environment.NIL);
+        } else {
+            scope.defineVariable(ast.getName(), ast.getMutable(), visit(ast.getValue().get()));
+        }
+        return Environment.NIL;
     }
 
     @Override
@@ -103,7 +110,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expression.Literal ast) {
-
+        if(ast.getLiteral() == null) return Environment.NIL;
         return Environment.create(ast.getLiteral());
     }
 
