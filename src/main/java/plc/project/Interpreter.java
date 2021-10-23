@@ -123,14 +123,14 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     public Environment.PlcObject visit(Ast.Expression.Binary ast) {
         String operator = ast.getOperator();
         if(operator == "&&"){
-            boolean leftSide = requireType(boolean.class, visit(ast.getRight()));
-            boolean rightSide = requireType(boolean.class, visit(ast.getRight()));
+            Boolean leftSide = requireType(Boolean.class, visit(ast.getRight()));
+            Boolean rightSide = requireType(Boolean.class, visit(ast.getRight()));
             return Environment.create(leftSide && rightSide);
         }
         if(operator == "||"){
-            boolean leftSide = requireType(boolean.class, visit(ast.getRight()));
-            if(leftSide) return Environment.create(new Ast.Expression.Literal(Boolean.TRUE));
-            boolean rightSide = requireType(boolean.class, visit(ast.getRight()));
+            Boolean leftSide = requireType(Boolean.class, visit(ast.getRight()));
+            if(leftSide) return Environment.create(leftSide);
+            Boolean rightSide = requireType(Boolean.class, visit(ast.getRight()));
             return Environment.create(rightSide);
         }
         if(operator == "<"){
@@ -144,6 +144,110 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
             if(leftSide.compareTo(rightSide) > 0) return Environment.create(true);
             return Environment.create(false);
+        }
+        if(operator == "=="){
+            Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
+            Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
+            return Environment.create(leftSide.equals(rightSide));
+        }
+        if(operator == "!="){
+            Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
+            Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
+            return Environment.create(!leftSide.equals(rightSide));
+        }
+        if(operator == "+"){
+            if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
+                BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
+                return Environment.create(leftSide.intValue() + rightSide.intValue());
+
+            } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
+                BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
+                return Environment.create(leftSide.doubleValue() + rightSide.doubleValue());
+
+            } else if(String.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                String leftSide = requireType(String.class, visit(ast.getLeft()));
+                String rightSide = requireType(String.class, visit(ast.getRight()));
+                return Environment.create(leftSide + rightSide);
+
+            }
+
+
+        }
+        if(operator == "-"){
+            if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
+                BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
+                return Environment.create(leftSide.intValue() - rightSide.intValue());
+
+            } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
+                BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
+                return Environment.create(leftSide.doubleValue() - rightSide.doubleValue());
+
+            }
+
+        }
+        if(operator == "*"){
+            if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
+                BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
+                return Environment.create(leftSide.intValue() * rightSide.intValue());
+
+            } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
+                BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
+                return Environment.create(leftSide.doubleValue() * rightSide.doubleValue());
+
+            }
+
+        }
+        if(operator == "/"){
+            if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
+                BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
+                if(rightSide.intValue() == 0) throw new RuntimeException("0 in denominator");
+                return Environment.create(leftSide.intValue() / rightSide.intValue());
+
+            } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
+                BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
+                if(rightSide.doubleValue() == 0.0) throw new RuntimeException("0 in denominator");
+                BigDecimal value = new BigDecimal((leftSide.doubleValue() / rightSide.doubleValue())).setScale(1, RoundingMode.HALF_EVEN);
+                return Environment.create(value);
+
+            }
+
+        }
+        if(operator == "^"){
+            if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
+                BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
+                return Environment.create(leftSide.intValue() ^ rightSide.intValue());
+
+            } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
+
+                BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
+                BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
+                BigDecimal base = leftSide;
+                for(int i = 0; i < rightSide.intValue(); i++){
+                    leftSide = base * leftSide;
+                }
+                return Environment.create(leftSide.doubleValue() ^ rightSide.intValue());
+
+            }
+
         }
         return Environment.NIL;
     }
