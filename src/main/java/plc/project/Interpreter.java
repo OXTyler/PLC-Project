@@ -121,7 +121,31 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expression.Binary ast) {
-        throw new UnsupportedOperationException(); //TODO
+        String operator = ast.getOperator();
+        if(operator == "&&"){
+            boolean leftSide = requireType(boolean.class, visit(ast.getRight()));
+            boolean rightSide = requireType(boolean.class, visit(ast.getRight()));
+            return Environment.create(leftSide && rightSide);
+        }
+        if(operator == "||"){
+            boolean leftSide = requireType(boolean.class, visit(ast.getRight()));
+            if(leftSide) return Environment.create(new Ast.Expression.Literal(Boolean.TRUE));
+            boolean rightSide = requireType(boolean.class, visit(ast.getRight()));
+            return Environment.create(rightSide);
+        }
+        if(operator == "<"){
+            Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
+            Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
+            if(leftSide.compareTo(rightSide) < 0) return Environment.create(true);
+            return Environment.create(false);
+        }
+        if(operator == ">"){
+            Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
+            Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
+            if(leftSide.compareTo(rightSide) > 0) return Environment.create(true);
+            return Environment.create(false);
+        }
+        return Environment.NIL;
     }
 
     @Override
