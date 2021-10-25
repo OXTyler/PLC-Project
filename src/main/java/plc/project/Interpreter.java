@@ -50,7 +50,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Function ast) {
-
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
@@ -86,17 +86,44 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Statement.If ast) {
-        throw new UnsupportedOperationException(); //TODO
+        List<Ast.Statement> statements;
+        if (requireType(Boolean.class, visit(ast.getCondition()))) {
+            statements = ast.getThenStatements();
+        } else {
+            statements = ast.getElseStatements();
+        }
+
+        try {
+            scope = new Scope(scope);
+            statements.forEach(this::visit);
+        } finally {
+            scope = scope.getParent();
+        }
+
+        return Environment.NIL;
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Statement.Switch ast) {
-        throw new UnsupportedOperationException(); //TODO
+        Object condition = visit(ast.getCondition()).getValue();
+        for (Ast.Statement.Case c : ast.getCases()) {
+            // if case matches condition or is default case (this assumes that default case is always last)
+            if (!c.getValue().isPresent() || condition.equals(visit(c).getValue())) {
+                try {
+                    scope = new Scope(scope);
+                    c.getStatements().forEach(this::visit);
+                } finally {
+                    scope = scope.getParent();
+                }
+                break;
+            }
+        }
+        return Environment.NIL;
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Statement.Case ast) {
-        throw new UnsupportedOperationException(); //TODO
+        return visit(ast.getValue().get());
     }
 
     @Override
@@ -170,11 +197,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
-<<<<<<< HEAD
                 return Environment.create(leftSide.add(rightSide));
-=======
-                return Environment.create(BigInteger.valueOf(leftSide.intValue() + rightSide.intValue()));
->>>>>>> aa838af05d7c5db8889c152f273a9d5f4cfeeb4b
 
             } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
 
@@ -203,12 +226,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
                 BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
-<<<<<<< HEAD
                 return Environment.create(leftSide.subtract(rightSide));
-=======
-                return Environment.create(BigDecimal.valueOf(leftSide.doubleValue() - rightSide.doubleValue()));
->>>>>>> aa838af05d7c5db8889c152f273a9d5f4cfeeb4b
-
             }
 
         }
