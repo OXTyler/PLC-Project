@@ -243,10 +243,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
                 BigDecimal base = leftSide;
-                for(int i = 0; i < rightSide.intValue(); i++){
-                    leftSide = base * leftSide;
-                }
-                return Environment.create(leftSide.doubleValue() ^ rightSide.intValue());
+//                for(int i = 0; i < rightSide.intValue(); i++){
+//                    leftSide = base * leftSide;
+//                }
+//                return Environment.create(leftSide.doubleValue() ^ rightSide.intValue());
 
             }
 
@@ -256,7 +256,13 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expression.Access ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getOffset().isPresent()) {
+            List o = (List) scope.lookupVariable(ast.getName()).getValue().getValue();
+            int i = ((BigInteger)((Ast.Expression.Literal)ast.getOffset().get()).getLiteral()).intValue();
+            return Environment.create(o.get(i));
+        } else {
+            return scope.lookupVariable(ast.getName()).getValue();
+        }
     }
 
     @Override
