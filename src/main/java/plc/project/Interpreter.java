@@ -125,7 +125,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expression.Group ast) {
-        throw new UnsupportedOperationException(); //TODO
+        return visit(ast.getExpression());
     }
 
     @Override
@@ -170,13 +170,17 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
+<<<<<<< HEAD
                 return Environment.create(leftSide.add(rightSide));
+=======
+                return Environment.create(BigInteger.valueOf(leftSide.intValue() + rightSide.intValue()));
+>>>>>>> aa838af05d7c5db8889c152f273a9d5f4cfeeb4b
 
             } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
 
                 BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
                 BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
-                return Environment.create(leftSide.doubleValue() + rightSide.doubleValue());
+                return Environment.create(BigDecimal.valueOf(leftSide.doubleValue() + rightSide.doubleValue()));
 
             } else if(String.class.isInstance(visit(ast.getLeft()).getValue())){
 
@@ -193,13 +197,17 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
-                return Environment.create(leftSide.intValue() - rightSide.intValue());
+                return Environment.create(BigInteger.valueOf(leftSide.intValue() - rightSide.intValue()));
 
             } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
 
                 BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
                 BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
+<<<<<<< HEAD
                 return Environment.create(leftSide.subtract(rightSide));
+=======
+                return Environment.create(BigDecimal.valueOf(leftSide.doubleValue() - rightSide.doubleValue()));
+>>>>>>> aa838af05d7c5db8889c152f273a9d5f4cfeeb4b
 
             }
 
@@ -209,13 +217,13 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
-                return Environment.create(leftSide.intValue() * rightSide.intValue());
+                return Environment.create(BigInteger.valueOf(leftSide.intValue() * rightSide.intValue()));
 
             } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
 
                 BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
                 BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
-                return Environment.create(leftSide.doubleValue() * rightSide.doubleValue());
+                return Environment.create(BigDecimal.valueOf(leftSide.doubleValue() * rightSide.doubleValue()));
 
             }
 
@@ -226,7 +234,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
                 if(rightSide.intValue() == 0) throw new RuntimeException("0 in denominator");
-                return Environment.create(leftSide.intValue() / rightSide.intValue());
+                return Environment.create(BigInteger.valueOf(leftSide.intValue() / rightSide.intValue()));
 
             } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
 
