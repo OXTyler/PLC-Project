@@ -50,19 +50,25 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Function ast) {
-        scope = new Scope(scope);
-        try{
-            for(String parameters : ast.getParameters()){
-                scope.defineVariable(parameters, true, Environment.create(BigInteger.TEN));
+        Scope functionScope = scope;
+        scope.defineFunction(ast.getName(), ast.getParameters().size(), args -> {
+            Scope prevScope = scope;
+            scope = new Scope(functionScope);
+            try {
+                List<String> parameters = ast.getParameters();
+
+                for(int i = 0; i < parameters.size(); i++) {
+                    scope.defineVariable(parameters.get(i), true, args.get(i));
+                }
+
+                ast.getStatements().forEach(this::visit);
+            } catch(Return r) {
+                return r.value;
+            } finally {
+                scope = prevScope;
             }
-            ast.getStatements().forEach(this::visit);
-        } catch(Exception Return){
-
-        }
-        finally {
-            scope = scope.getParent();
-        }
-
+            return Environment.NIL;
+        });
         return Environment.NIL;
     }
 
@@ -171,6 +177,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Expression.Binary ast) {
         String operator = ast.getOperator();
+        Object o = visit(ast.getLeft()).getValue();
         if(operator == "&&"){
             Boolean leftSide = requireType(Boolean.class, visit(ast.getLeft()));
             Boolean rightSide = requireType(Boolean.class, visit(ast.getRight()));
@@ -284,16 +291,12 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
                 return Environment.create(findPow(leftSide, rightSide));
-            } else if (BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
+            } else if (BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())) {
+
                 BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
                 return Environment.create(findPow(leftSide, rightSide));
             }
-
-
-
-
-
         }
         return Environment.NIL;
     }
