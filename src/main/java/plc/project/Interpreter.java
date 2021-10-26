@@ -50,7 +50,20 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Function ast) {
-        throw new UnsupportedOperationException(); // TODO
+        scope = new Scope(scope);
+        try{
+            for(String parameters : ast.getParameters()){
+                scope.defineVariable(parameters, true, Environment.create(BigInteger.TEN));
+            }
+            ast.getStatements().forEach(this::visit);
+        } catch(Exception Return){
+
+        }
+        finally {
+            scope = scope.getParent();
+        }
+
+        return Environment.NIL;
     }
 
     @Override
@@ -343,11 +356,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     /**
      * Exception class for returning values.
      */
-    private static class Return extends RuntimeException {
+    public static class Return extends RuntimeException {
 
-        private final Environment.PlcObject value;
+        public final Environment.PlcObject value;
 
-        private Return(Environment.PlcObject value) {
+        public Return(Environment.PlcObject value) {
             this.value = value;
         }
 
