@@ -177,7 +177,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Expression.Binary ast) {
         String operator = ast.getOperator();
-        Object o = visit(ast.getLeft()).getValue();
         if(operator == "&&"){
             Boolean leftSide = requireType(Boolean.class, visit(ast.getLeft()));
             Boolean rightSide = requireType(Boolean.class, visit(ast.getRight()));
