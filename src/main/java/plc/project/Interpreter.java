@@ -33,7 +33,8 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             visit(ast.getGlobals().get(i));
         }
         if(ast.getFunctions().get(0).getName() == "main" && ast.getFunctions().get(0).getParameters().size() == 0){
-            return visit(ast.getFunctions().get(0));
+            visit(ast.getFunctions().get(0));
+            return scope.lookupFunction("main", 0).invoke(null);
         }
         throw new RuntimeException("missing main function");
     }
@@ -50,10 +51,9 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Function ast) {
-        Scope functionScope = scope;
+
         scope.defineFunction(ast.getName(), ast.getParameters().size(), args -> {
-            Scope prevScope = scope;
-            scope = new Scope(functionScope);
+            scope = new Scope(scope);
             try {
                 List<String> parameters = ast.getParameters();
 
@@ -65,7 +65,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             } catch(Return r) {
                 return r.value;
             } finally {
-                scope = prevScope;
+                scope = scope.getParent();
             }
             return Environment.NIL;
         });
@@ -99,7 +99,16 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Statement.Assignment ast) {
         Ast.Expression.Access var = requireType(Ast.Expression.Access.class, Environment.create(ast.getReceiver()));
-        scope.lookupVariable(var.getName()).setValue(visit(ast.getValue()));
+
+        if(!scope.lookupVariable(var.getName()).getMutable()) throw new RuntimeException("Value immutable");
+
+        if(var.getOffset().equals(Optional.empty())){
+            scope.lookupVariable(var.getName()).setValue(visit(ast.getValue()));
+        } else {
+            List vals = new ArrayList<>();
+
+        }
+
         return Environment.NIL;
     }
 
@@ -177,42 +186,41 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Expression.Binary ast) {
         String operator = ast.getOperator();
-        Object o = visit(ast.getLeft()).getValue();
-        if(operator == "&&"){
+        if(operator.equals("&&")){
             Boolean leftSide = requireType(Boolean.class, visit(ast.getLeft()));
             Boolean rightSide = requireType(Boolean.class, visit(ast.getRight()));
             return Environment.create(leftSide && rightSide);
         }
-        if(operator == "||"){
+        if(operator.equals("||")){
             Boolean leftSide = requireType(Boolean.class, visit(ast.getLeft()));
             if(leftSide) return Environment.create(leftSide);
             Boolean rightSide = requireType(Boolean.class, visit(ast.getRight()));
             return Environment.create(rightSide);
 
         }
-        if(operator == "<"){
+        if(operator.equals("<")){
             Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
             Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
             if(leftSide.compareTo(rightSide) < 0) return Environment.create(true);
             return Environment.create(false);
         }
-        if(operator == ">"){
+        if(operator.equals(">")){
             Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
             Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
             if(leftSide.compareTo(rightSide) > 0) return Environment.create(true);
             return Environment.create(false);
         }
-        if(operator == "=="){
+        if(operator.equals("==")){
             Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
             Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
             return Environment.create(leftSide.equals(rightSide));
         }
-        if(operator == "!="){
+        if(operator.equals("!=")){
             Comparable leftSide = requireType(Comparable.class, visit(ast.getLeft()));
             Comparable rightSide = requireType(Comparable.class, visit(ast.getRight()));
             return Environment.create(!leftSide.equals(rightSide));
         }
-        if(operator == "+"){
+        if(operator.equals("+")){
             if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
@@ -342,7 +350,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expression.PlcList ast) {
-        throw new UnsupportedOperationException(); //TODO
+        List vals = new ArrayList<Environment.PlcObject>();
+        for (Ast.Expression value : ast.getValues()) {
+            vals.add(visit(value).getValue());
+        }
+        return Environment.create(vals);
     }
 
     /**
