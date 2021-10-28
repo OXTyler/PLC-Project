@@ -32,11 +32,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         for(int i =0; i < ast.getGlobals().size(); i++){
             visit(ast.getGlobals().get(i));
         }
-        if(ast.getFunctions().get(0).getName() == "main" && ast.getFunctions().get(0).getParameters().size() == 0){
-            visit(ast.getFunctions().get(0));
-            return scope.lookupFunction("main", 0).invoke(null);
+        for(int i =0; i < ast.getFunctions().size(); i++){
+            visit(ast.getFunctions().get(i));
         }
-        throw new RuntimeException("missing main function");
+        return scope.lookupFunction("main", 0).invoke(new ArrayList<>());
+
     }
 
     @Override
@@ -105,8 +105,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         if(var.getOffset().equals(Optional.empty())){
             scope.lookupVariable(var.getName()).setValue(visit(ast.getValue()));
         } else {
-            List vals = new ArrayList<>();
-
+            List<Object> vals = (List<Object>)scope.lookupVariable(var.getName()).getValue().getValue();
+            int off = ((BigInteger)visit(var.getOffset().get()).getValue()).intValue();
+            vals.set(off, visit(ast.getValue()).getValue());
+            scope.lookupVariable(var.getName()).setValue(Environment.create(vals));
         }
 
         return Environment.NIL;
@@ -243,14 +245,14 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
 
         }
-        if(operator == "-"){
-            if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
+        if(operator.equals("-")){
+            if(visit(ast.getLeft()).getValue() instanceof BigInteger){
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
                 BigInteger rightSide = requireType(BigInteger.class, visit(ast.getRight()));
                 return Environment.create(BigInteger.valueOf(leftSide.intValue() - rightSide.intValue()));
 
-            } else if(BigDecimal.class.isInstance(visit(ast.getLeft()).getValue())){
+            } else if(visit(ast.getLeft()).getValue() instanceof BigDecimal){
 
                 BigDecimal leftSide = requireType(BigDecimal.class, visit(ast.getLeft()));
                 BigDecimal rightSide = requireType(BigDecimal.class, visit(ast.getRight()));
@@ -258,7 +260,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
 
         }
-        if(operator == "*"){
+        if(operator.equals("*")){
             if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
@@ -274,7 +276,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
 
         }
-        if(operator == "/"){
+        if(operator.equals("/")){
             if(BigInteger.class.isInstance(visit(ast.getLeft()).getValue())){
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
@@ -293,7 +295,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
 
         }
-        if(operator == "^") {
+        if(operator.equals("^")) {
             if (BigInteger.class.isInstance(visit(ast.getLeft()).getValue())) {
 
                 BigInteger leftSide = requireType(BigInteger.class, visit(ast.getLeft()));
@@ -312,20 +314,34 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     BigInteger findPow(BigInteger base, BigInteger pow){
         BigInteger val = base;
         BigInteger iter = new BigInteger("0");
-        while(!pow.subtract(iter).equals(new BigInteger("1"))){
-            val = val.multiply(base);
-            iter = iter.add(BigInteger.ONE);
+        boolean neg = false;
+        if(pow.intValue() < 0) {
+            neg = true;
+            pow = pow.negate();
         }
+        while (!pow.subtract(iter).equals(new BigInteger("1"))) {
+                val = val.multiply(base);
+                iter = iter.add(BigInteger.ONE);
+            }
+
+        if(neg) return BigInteger.ONE.divide(val);
         return val;
     }
 
     BigDecimal findPow(BigDecimal base, BigInteger pow){
         BigDecimal val = base;
         BigInteger iter = new BigInteger("0");
+        boolean neg = false;
+        if(pow.intValue() < 0) {
+            neg = true;
+            pow = pow.negate();
+        }
+        pow = pow.multiply(pow).divide(pow); //abs value
         while(!pow.subtract(iter).equals(new BigInteger("1"))){
             val = val.multiply(base);
             iter = iter.add(BigInteger.ONE);
         }
+        if(neg) return BigDecimal.ONE.divide(val);
         return val;
     }
 
