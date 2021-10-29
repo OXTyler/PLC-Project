@@ -51,9 +51,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Function ast) {
-
+        Scope functionScope = scope;
         scope.defineFunction(ast.getName(), ast.getParameters().size(), args -> {
-            scope = new Scope(scope);
+            Scope prevScope = scope;
+            scope = new Scope(functionScope);
             try {
                 List<String> parameters = ast.getParameters();
 
@@ -65,7 +66,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             } catch(Return r) {
                 return r.value;
             } finally {
-                scope = scope.getParent();
+                scope = prevScope;
             }
             return Environment.NIL;
         });
