@@ -231,13 +231,22 @@ public final class Parser {
         tokens.advance();
 
         Ast.Expression exp = null;
+        String typeName = null;
+
+        if (match(":")) {
+            if (!peek(Token.Type.IDENTIFIER)) {
+                throwError("Type Identifier needed after ':'");
+            }
+            typeName = tokens.get(0).getLiteral();
+            tokens.advance();
+        }
 
         if (match("=")) {
             exp = parseExpression();
         }
 
         if (match(";")) {
-            return new Ast.Statement.Declaration(name, Optional.ofNullable(exp));
+            return new Ast.Statement.Declaration(name, Optional.ofNullable(typeName), Optional.ofNullable(exp));
         }
 
         throwError("Semi-Colon Expected");
@@ -470,7 +479,7 @@ public final class Parser {
         return null; //wont get here
     }
 
-    void throwError(String errorMsg){
+    private void throwError(String errorMsg) {
 
         if(tokens.has(0)) {
             throw new ParseException("Invalid expression", tokens.get(0).getIndex());
