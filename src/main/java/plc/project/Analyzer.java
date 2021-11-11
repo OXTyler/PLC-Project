@@ -41,7 +41,11 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Expression ast) {
-        throw new UnsupportedOperationException();  // TODO
+        if (!(ast.getExpression() instanceof Ast.Expression.Function)) {
+            throw new RuntimeException("Function expression required.");
+        }
+
+        return null;
     }
 
     @Override
@@ -51,7 +55,16 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Assignment ast) {
-        throw new UnsupportedOperationException();  // TODO
+        if (!(ast.getReceiver() instanceof Ast.Expression.Access)) {
+            throw new RuntimeException("Receiver needs to be an access expression to be assignable");
+        }
+
+        visit(ast.getReceiver());
+        visit(ast.getValue());
+
+        requireAssignable(ast.getReceiver().getType(), ast.getValue().getType());
+
+        return null;
     }
 
     @Override
@@ -71,7 +84,19 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.While ast) {
-        throw new UnsupportedOperationException();  // TODO
+        visit(ast.getCondition());
+        requireAssignable(Environment.Type.BOOLEAN, ast.getCondition().getType());
+
+        try {
+            scope = new Scope(scope);
+            for (Ast.Statement stmt : ast.getStatements()) {
+                visit(stmt);
+            }
+        } finally {
+            scope = scope.getParent();
+        }
+
+        return null;
     }
 
     @Override
@@ -81,7 +106,31 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Literal ast) {
-        throw new UnsupportedOperationException();  // TODO
+        if (ast.getLiteral() == null) {
+            ast.setType(Environment.Type.NIL);
+        } else if (ast.getLiteral() instanceof Boolean) {
+            ast.setType(Environment.Type.BOOLEAN);
+        } else if (ast.getLiteral() instanceof Character) {
+            ast.setType(Environment.Type.CHARACTER);
+        } else if (ast.getLiteral() instanceof String) {
+            ast.setType(Environment.Type.STRING);
+        } else if (ast.getLiteral() instanceof BigInteger) {
+            if (((BigInteger) ast.getLiteral()).compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) == 1 ||
+                    ((BigInteger) ast.getLiteral()).compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) == -1) {
+                throw new RuntimeException("value is out of range");
+            }
+
+            ast.setType(Environment.Type.INTEGER);
+        } else if (ast.getLiteral() instanceof BigDecimal) {
+            if (((BigDecimal) ast.getLiteral()).compareTo(BigDecimal.valueOf(Double.MAX_VALUE)) == 1 ||
+                    ((BigDecimal) ast.getLiteral()).compareTo(BigDecimal.valueOf(Double.MIN_VALUE)) == -1) {
+                throw new RuntimeException("value is out of range");
+            }
+
+            ast.setType(Environment.Type.DECIMAL);
+        }
+
+        return null;
     }
 
     @Override
@@ -96,7 +145,14 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Access ast) {
-        throw new UnsupportedOperationException();  // TODO
+        if (ast.getOffset().isPresent() && ast.getOffset().get().getType() != Environment.Type.INTEGER) {
+            throw new RuntimeException("Offset type must be INTEGER");
+        }
+
+        Environment.Variable var = getScope().lookupVariable(ast.getName());
+        ast.setVariable(var);
+
+        return null;
     }
 
     @Override
