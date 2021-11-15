@@ -135,12 +135,74 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Group ast) {
-        throw new UnsupportedOperationException();  // TODO
+        if (!(ast.getExpression() instanceof Ast.Expression.Binary)) {
+            throw new RuntimeException("Expression must be a binary binary expression");
+        }
+
+        visit(ast.getExpression());
+        ast.setType(ast.getExpression().getType());
+
+        return null;
     }
 
     @Override
     public Void visit(Ast.Expression.Binary ast) {
-        throw new UnsupportedOperationException();  // TODO
+        visit(ast.getLeft());
+        visit(ast.getRight());
+
+        Environment.Type lType = ast.getLeft().getType();
+        Environment.Type rType = ast.getRight().getType();
+
+        switch (ast.getOperator()) {
+            case "&&":
+            case "||":
+                if (lType == Environment.Type.BOOLEAN && rType == Environment.Type.BOOLEAN) {
+                    ast.setType(Environment.Type.BOOLEAN);
+                } else {
+                    throw new RuntimeException("Operands must be Boolean");
+                }
+                break;
+            case "<":
+            case ">":
+            case "==":
+            case "!=":
+                requireAssignable(Environment.Type.COMPARABLE, lType);
+                requireAssignable(Environment.Type.COMPARABLE, rType);
+                if (lType != rType) {
+                    throw new RuntimeException("Operands must be the same type");
+                }
+
+                ast.setType(Environment.Type.BOOLEAN);
+                break;
+            case "+":
+                if (lType == Environment.Type.STRING || rType == Environment.Type.STRING) {
+                    ast.setType(Environment.Type.STRING);
+                } else if (!((rType == Environment.Type.INTEGER || rType == Environment.Type.DECIMAL) && rType == lType)) {
+                    throw new RuntimeException("Operand types must be both either Integer or Decimal");
+                }
+
+                ast.setType(lType);
+                break;
+            case "-":
+            case "*":
+            case "/":
+                if (!((rType == Environment.Type.INTEGER || rType == Environment.Type.DECIMAL) && rType == lType)) {
+                    throw new RuntimeException("Operand types must be both either Integer or Decimal");
+                }
+
+                ast.setType(lType);
+                break;
+            case "^":
+                requireAssignable(Environment.Type.INTEGER, rType);
+                if (lType != Environment.Type.INTEGER && lType != Environment.Type.DECIMAL) {
+                    throw new RuntimeException("LHS must be either an Integer or a Decimal");
+                }
+
+                ast.setType(lType);
+                break;
+        }
+
+        return null;
     }
 
     @Override
