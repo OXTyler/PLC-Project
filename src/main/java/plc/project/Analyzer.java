@@ -1,9 +1,11 @@
 package plc.project;
 
+import javax.swing.text.html.Option;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -26,12 +28,45 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Source ast) {
-        throw new UnsupportedOperationException();  // TODO
+        boolean found = false;
+        for(Ast.Function func : ast.getFunctions()){
+            if(func.getName() == "main"){
+                found = true;
+                if(func.getReturnTypeName().get() != "Integer"){
+                    throw new RuntimeException("main does not return Integer");
+                }
+                for(Ast.Statement states : func.getStatements()){
+                    if((states instanceof Ast.Statement.Return)){
+                        if(!(((Ast.Expression.Literal) ((Ast.Statement.Return) states).getValue()).getLiteral() instanceof  Integer)){
+                            throw new RuntimeException("invalid Return");
+                        }
+                    }
+                }
+            }
+        }
+        if(!found) throw new RuntimeException("missing main function");
+        return null;
     }
 
     @Override
     public Void visit(Ast.Global ast) {
-        throw new UnsupportedOperationException();  // TODO
+        System.out.println(Environment.getType(ast.getTypeName()));
+       if(ast.getValue().isPresent()) visit(ast.getValue().get());
+        else {
+            ast.setVariable(new Environment.Variable(ast.getName(), ast.getName(),Environment.getType(ast.getTypeName()), true, Environment.NIL));
+            scope.defineVariable(ast.getName(), true, Environment.create(ast.getVariable()));
+            return null;
+       }
+        Environment.getType(ast.getValue().get().getType().getJvmName());
+        if(ast.getTypeName().equals(ast.getValue().get().getType().getJvmName())){
+
+            scope.defineVariable(ast.getName(), true, Environment.create(ast.getVariable()));
+        }
+        else {
+            throw new RuntimeException("Invalid Type for value");
+        }
+
+        return null;
     }
 
     @Override
