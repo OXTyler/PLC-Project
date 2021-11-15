@@ -80,6 +80,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
             throw new RuntimeException("Function expression required.");
         }
 
+        visit(ast.getExpression());
+
         return null;
     }
 
@@ -104,7 +106,31 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.If ast) {
-        throw new UnsupportedOperationException();  // TODO
+        visit(ast.getCondition());
+        requireAssignable(Environment.Type.BOOLEAN, ast.getCondition().getType());
+
+        if (ast.getThenStatements().isEmpty()) {
+            throw new RuntimeException("then statements cannot be empty");
+        }
+
+        try {
+            scope = new Scope(scope);
+            for (Ast.Statement stmt : ast.getThenStatements()) {
+                visit(stmt);
+            }
+        } finally {
+            scope = scope.getParent();
+        }
+
+        try {
+            scope = new Scope(scope);
+            for (Ast.Statement stmt : ast.getElseStatements()) {
+                visit(stmt);
+            }
+        } finally {
+            scope = scope.getParent();
+        }
+        return null;
     }
 
     @Override
@@ -191,11 +217,10 @@ public final class Analyzer implements Ast.Visitor<Void> {
         switch (ast.getOperator()) {
             case "&&":
             case "||":
-                if (lType == Environment.Type.BOOLEAN && rType == Environment.Type.BOOLEAN) {
-                    ast.setType(Environment.Type.BOOLEAN);
-                } else {
-                    throw new RuntimeException("Operands must be Boolean");
-                }
+                requireAssignable(Environment.Type.BOOLEAN, lType);
+                requireAssignable(Environment.Type.BOOLEAN, rType);
+                ast.setType(Environment.Type.BOOLEAN);
+
                 break;
             case "<":
             case ">":
@@ -203,6 +228,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
             case "!=":
                 requireAssignable(Environment.Type.COMPARABLE, lType);
                 requireAssignable(Environment.Type.COMPARABLE, rType);
+
                 if (lType != rType) {
                     throw new RuntimeException("Operands must be the same type");
                 }
@@ -254,7 +280,19 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Function ast) {
-        throw new UnsupportedOperationException();  // TODO
+
+        Environment.Function function = scope.lookupFunction(ast.getName(), ast.getArguments().size());
+
+        ast.setFunction(function);
+
+        for (int i = 0; i < ast.getArguments().size(); i++) {
+            Ast.Expression arg = ast.getArguments().get(i);
+            visit(arg);
+
+            requireAssignable(ast.getFunction().getParameterTypes().get(i), arg.getType());
+        }
+
+        return null;
     }
 
     @Override
