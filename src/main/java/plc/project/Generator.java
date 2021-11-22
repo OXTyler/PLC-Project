@@ -59,7 +59,11 @@ public final class Generator implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Global ast) {
         if(!ast.getMutable()) writer.write("final ");
-        writer.write(Environment.getType(ast.getTypeName()).getJvmName() + " " + ast.getName());
+        writer.write(Environment.getType(ast.getTypeName()).getJvmName());
+        if(ast.getValue().isPresent() && Ast.Expression.PlcList.class != null){
+            writer.write("[]");
+        }
+        writer.write( " " + ast.getName());
 
         if(ast.getValue().isPresent()){
             writer.write(" = ");
@@ -80,8 +84,10 @@ public final class Generator implements Ast.Visitor<Void> {
             }
             writer.write(")" + " {");
             newline(indent + 1);
-            for(Ast.Statement states: ast.getStatements()){
-                visit(states);
+            for(int i = 0 ; i < ast.getStatements().size(); i++){
+                visit(ast.getStatements().get(i));
+                writer.write(";");
+                if(i != ast.getStatements().size() - 1) newline(indent);
             }
             newline(indent - 1);
             writer.write("}");
@@ -93,7 +99,6 @@ public final class Generator implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Statement.Expression ast) {
         visit(ast.getExpression());
-        newline(indent);
         return null;
     }
 
@@ -118,22 +123,33 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Assignment ast) {
-        throw new UnsupportedOperationException(); //TODO
+        visit(ast.getReceiver());
+        writer.write(" = ");
+        visit(ast.getValue());
+        return null;
     }
 
     @Override
-    public Void visit(Ast.Statement.If ast) { //TODO: probably broke tbh
-        writer.write("if" + "(" + ast.getCondition() + ")" + " {");
-        newline(indent - 1);
-        for(Ast.Statement state : ast.getThenStatements()){
-            visit((state));
+    public Void visit(Ast.Statement.If ast) {
+        writer.write("if" + " (");
+        visit(ast.getCondition());
+        writer.write(")" + " {");
+        newline(indent + 1);
+        for(int i = 0; i < ast.getThenStatements().size(); i++){
+            visit((ast.getThenStatements().get(i)));
+            writer.write(";");
+            if( i != ast.getThenStatements().size() - 1) newline( indent);
+            else newline(indent - 1);
         }
         writer.write("}");
         if(ast.getElseStatements().size() != 0){
-            writer.write("else {");
-            newline(indent);
-            for(Ast.Statement state : ast.getElseStatements()){
-                visit((state));
+            writer.write(" else {");
+            newline(indent + 1);
+            for(int i = 0; i < ast.getElseStatements().size(); i++){
+                visit((ast.getElseStatements().get(i)));
+                writer.write(";");
+                if( i != ast.getElseStatements().size() - 1) newline( indent);
+                else newline(indent - 1);
             }
             writer.write("}");
         }
@@ -143,21 +159,48 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Switch ast) {
-        throw new UnsupportedOperationException(); //TODO
+        writer.write("switch (");
+        visit(ast.getCondition());
+        writer.write(") {");
+        newline(indent + 1);
+        for(int i = 0; i < ast.getCases().size(); i++){
+            visit(ast.getCases().get(i));
+            if(i != ast.getCases().size() - 1){
+                newline(indent);
+            }
+            else newline(indent - 1);
+        }
+        writer.write("}");
+        return null;
     }
 
     @Override
     public Void visit(Ast.Statement.Case ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if(ast.getValue().isPresent()){
+            writer.write("case ");
+            visit(ast.getValue().get());
+        } else {
+            writer.write("default" );
+        }
+        writer.write(":");
+        newline(indent + 1);
+        for(int i = 0; i <ast.getStatements().size(); i++){
+            visit(ast.getStatements().get(i));
+            writer.write(";");
+            if(i != ast.getStatements().size() - 1) newline(indent);
+            else indent--;
+        }
+        return null;
     }
 
     @Override
     public Void visit(Ast.Statement.While ast) { //TODO: havent tested yet
         writer.write("while" + " (" + ast.getCondition() + ")" + " {");
         newline(indent + 1);
-        for(Ast.Statement state : ast.getStatements()){
-            visit(state);
-            newline(indent);
+        for(int i = 0; i < ast.getStatements().size(); i++){
+            visit(ast.getStatements().get(i));
+            if(i != ast.getStatements().size() - 1) newline(indent);
+            else newline(indent - 1);
         }
         writer.write("}");
         return null;
@@ -167,16 +210,15 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Statement.Return ast) {
         writer.write("return ");
         visit(ast.getValue());
-        writer.write(";");
         return null;
     }
 
     @Override
     public Void visit(Ast.Expression.Literal ast) { //TODO: consider BigDecimal
-        if(ast.getType().getJvmName() == "String"){
+        if(ast.getType().getJvmName().equals("String")){
             writer.write("\"" + ast.getLiteral().toString() + "\"");
         }
-        else if(ast.getType().getJvmName() == "Character"){
+        else if(ast.getType().getJvmName().equals("char")){
             writer.write("'" + ast.getLiteral().toString() + "'");
         }
         else{
@@ -188,17 +230,39 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Group ast) {
-        throw new UnsupportedOperationException(); //TODO
+        writer.write("(");
+        visit(ast.getExpression());
+        writer.write(")");
+        return null;
     }
 
     @Override
     public Void visit(Ast.Expression.Binary ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if(!ast.getOperator().equals("^")){
+            visit(ast.getLeft());
+            writer.write(" " + ast.getOperator() + " ");
+            visit(ast.getRight());
+        }
+        else{
+            writer.write("Math.pow(");
+            visit(ast.getLeft());
+            writer.write(", ");
+            visit(ast.getRight());
+        }
+        return null;
     }
 
     @Override
     public Void visit(Ast.Expression.Access ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if(!ast.getOffset().isPresent()){
+            writer.write(ast.getName());
+        }
+        else{
+            writer.write(ast.getName() + "[");
+            visit(ast.getOffset().get());
+            writer.write("]");
+        }
+        return null;
     }
 
     //not sure if it should end with semi-colon, example on assignment different than tested
@@ -209,14 +273,20 @@ public final class Generator implements Ast.Visitor<Void> {
             visit(ast.getArguments().get(i));
             if(i != ast.getArguments().size()-1) writer.write(", ");
         }
-        writer.write(");");
+        writer.write(")");
 
         return null;
     }
 
     @Override
     public Void visit(Ast.Expression.PlcList ast) {
-        throw new UnsupportedOperationException(); //TODO
+        writer.write("{");
+        for(int i = 0; i < ast.getValues().size(); i++){
+            visit(ast.getValues().get(i));
+            if(i != ast.getValues().size() - 1) writer.write(", ");
+        }
+        writer.write("}");
+        return null;
     }
 
 

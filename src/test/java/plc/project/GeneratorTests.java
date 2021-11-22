@@ -212,7 +212,7 @@ public class GeneratorTests {
         return Stream.of(
                 Arguments.of("And",
                         // TRUE AND FALSE
-                        init(new Ast.Expression.Binary("AND",
+                        init(new Ast.Expression.Binary("&&",
                                 init(new Ast.Expression.Literal(true), ast -> ast.setType(Environment.Type.BOOLEAN)),
                                 init(new Ast.Expression.Literal(false), ast -> ast.setType(Environment.Type.BOOLEAN))
                         ), ast -> ast.setType(Environment.Type.BOOLEAN)),

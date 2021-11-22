@@ -24,7 +24,13 @@ public final class Parser {
     interface ExpressionParser {
         public Ast.Expression parse();
     }
-
+    String getType(){
+        if(!peek(":", Token.Type.IDENTIFIER)) throwError("missing Type");
+        tokens.advance();
+        String typeName = tokens.get(0).getLiteral();
+        tokens.advance();
+        return typeName;
+    }
     private final TokenStream tokens;
 
     public Parser(List<Token> tokens) {
@@ -66,6 +72,7 @@ public final class Parser {
         String name = tokens.get(0).getLiteral();
         tokens.advance();
 
+        String typeName = getType();
         if (!match("=")) throwError("'=' Expected");
         if (!match("[")) throwError("'[' Expected");
 
@@ -80,7 +87,7 @@ public final class Parser {
 
         if (!match("]")) throwError("'[' Expected");
 
-        return new Ast.Global(name, true, Optional.of(new Ast.Expression.PlcList(values)));
+        return new Ast.Global(name, typeName, true, Optional.of(new Ast.Expression.PlcList(values)));
     }
 
     /**
@@ -95,11 +102,12 @@ public final class Parser {
             tokens.advance();
         }
         else throwError("Invalid Mutable");
+        String typeName = getType();
         if (match("=")) {
             value = parseExpression();
-            return new Ast.Global(name, true, Optional.of(value));
+            return new Ast.Global(name, typeName, true, Optional.of(value));
         }
-        return new Ast.Global(name, true, Optional.empty());
+        return new Ast.Global(name, typeName, true, Optional.empty());
 
     }
 
@@ -110,11 +118,14 @@ public final class Parser {
     public Ast.Global parseImmutable() throws ParseException {
         String name;
         Ast.Expression value;
-        if (peek(Token.Type.IDENTIFIER, "=")) {
+        if (peek(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER, "=")) {
             name = tokens.get(0).getLiteral();
-            match(Token.Type.IDENTIFIER, "=");
+            tokens.advance();
+            String typeName = getType();
+
+            match("=");
             value = parseExpression();
-           return new Ast.Global(name, false, Optional.of(value));
+           return new Ast.Global(name, typeName, false, Optional.of(value));
        }
         throwError("Invalid Immutable");
         return null; //never gets here
@@ -126,7 +137,9 @@ public final class Parser {
      */
     public Ast.Function parseFunction() throws ParseException {
         String name;
+        String funcType = null;
         List<String> parameters = new ArrayList<>();
+        List<String> parameterTypes = new ArrayList<>();
         List<Ast.Statement> statements;
 
         if (peek(Token.Type.IDENTIFIER, "(")) {
@@ -135,28 +148,44 @@ public final class Parser {
             match(Token.Type.IDENTIFIER, "(");
             if (!match(")")) {
 
-                if (!peek(Token.Type.IDENTIFIER)) throwError("Invalid Function");
+                if (!peek(Token.Type.IDENTIFIER, ":", Token.Type.IDENTIFIER)) throwError("Invalid Function");
                 parameters.add(tokens.get(0).getLiteral());
                 tokens.advance();
+                tokens.advance();
+                parameterTypes.add(tokens.get(0).getLiteral());
+                tokens.advance();
 
-                while (peek(Token.Type.IDENTIFIER, ",")) {
+                while (peek(Token.Type.IDENTIFIER, ":", Token.Type.IDENTIFIER, ",")) {
 
                     parameters.add(tokens.get(0).getLiteral());
+                    tokens.advance();
+                    tokens.advance();
+                    parameterTypes.add(tokens.get(0).getLiteral());
                     match(Token.Type.IDENTIFIER, ",");
-
                 }
 
-                if (!peek(Token.Type.IDENTIFIER)) throwError("Invalid Function");
+                if (!peek(Token.Type.IDENTIFIER, ":", Token.Type.IDENTIFIER)) throwError("Invalid Function");
 
                 parameters.add(tokens.get(0).getLiteral());
                 tokens.advance();
+                tokens.advance();
+                parameterTypes.add(tokens.get(0).getLiteral());
+                tokens.advance();
 
+            }
+            if(match(":")){
+                if(!peek(Token.Type.IDENTIFIER)) throwError("Invalid Function Type");
+                funcType = tokens.get(0).getLiteral();
+                tokens.advance();
             }
             if (!match("DO")) throwError("Missing DO");
 
             statements = parseBlock();
 
-            if (match("END")) return new Ast.Function(name, parameters, statements);
+            if (match("END")) {
+                if(funcType != null) return new Ast.Function(name, parameters, parameterTypes, Optional.of(funcType), statements);
+                return new Ast.Function(name, parameters, parameterTypes, Optional.empty(), statements);
+            }
 
             throwError("Missing END");
 
@@ -474,7 +503,7 @@ public final class Parser {
             }
             return val;
         }
-
+        System.out.println(tokens.get(0).getLiteral());
         throwError("Invalid Expression");
         return null; //wont get here
     }
