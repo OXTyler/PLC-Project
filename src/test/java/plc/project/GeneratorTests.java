@@ -127,6 +127,32 @@ public class GeneratorTests {
     }
 
     @Test
+    void testFunction() {
+        //FUN func(x: Integer, y: Decimal, z: String) DO
+        //    print(x);
+        //    print(y);
+        //    print(z);
+        //END
+        Ast.Function func = new Ast.Function("func", Arrays.asList("x", "y", "z"), Arrays.asList("Integer", "Decimal", "String"), Optional.empty(),
+                Arrays.asList(
+                        new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "x")),
+                        new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "y")),
+                        new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "z"))
+                )
+        );
+
+        String expected = String.join(System.lineSeparator(),
+                "void func(int x, double y, String z) {",
+                "    return x;",
+                "    return y;",
+                "    return z;",
+                "}"
+                );
+
+        test(func, expected);
+    }
+
+    @Test
     void testList() {
         // LIST list: Decimal = [1.0, 1.5, 2.0];
         Ast.Expression.Literal expr1 = new Ast.Expression.Literal(new BigDecimal("1.0"));
@@ -355,7 +381,7 @@ public class GeneratorTests {
     private static void test(Ast ast, String expected) {
         StringWriter writer = new StringWriter();
         new Generator(new PrintWriter(writer)).visit(ast);
-        System.out.println(writer.toString());
+        System.out.println(writer);
         Assertions.assertEquals(expected, writer.toString());
     }
 

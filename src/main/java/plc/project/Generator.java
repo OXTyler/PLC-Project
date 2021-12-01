@@ -93,15 +93,19 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Function ast) {
         if(ast.getReturnTypeName().isPresent()){
             writer.write(Environment.getType(ast.getReturnTypeName().get()).getJvmName() + " ");
-            writer.write(ast.getName() + "(");
-            for(int i = 0; i < ast.getParameters().size(); i++){
-                writer.write(Environment.getType(ast.getParameterTypeNames().get(i)).getJvmName() + " " + ast.getParameters().get(i));
-                if(i != ast.getParameters().size() - 1) writer.write(", ");
-            }
-            writer.write(")" + " {");
-            print(ast.getStatements());
-            writer.write("}");
+        } else {
+            writer.write("void ");
         }
+
+        writer.write(ast.getName() + "(");
+        for(int i = 0; i < ast.getParameters().size(); i++){
+            writer.write(Environment.getType(ast.getParameterTypeNames().get(i)).getJvmName() + " " + ast.getParameters().get(i));
+            if(i != ast.getParameters().size() - 1) writer.write(", ");
+        }
+        writer.write(")" + " {");
+        print(ast.getStatements());
+        writer.write("}");
+
         return null;
     }
 
