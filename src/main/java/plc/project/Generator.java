@@ -92,7 +92,6 @@ public final class Generator implements Ast.Visitor<Void> {
             newline(++indent);
             for(int i = 0 ; i < ast.getStatements().size(); i++){
                 visit(ast.getStatements().get(i));
-                writer.write(";");
                 if(i != ast.getStatements().size() - 1) newline(indent);
             }
             newline(--indent);
@@ -104,6 +103,7 @@ public final class Generator implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Statement.Expression ast) {
         visit(ast.getExpression());
+        writer.write(";");
         return null;
     }
 
@@ -131,6 +131,7 @@ public final class Generator implements Ast.Visitor<Void> {
         visit(ast.getReceiver());
         writer.write(" = ");
         visit(ast.getValue());
+        writer.write(";");
         return null;
     }
 
@@ -142,7 +143,6 @@ public final class Generator implements Ast.Visitor<Void> {
         newline(++indent);
         for(int i = 0; i < ast.getThenStatements().size(); i++){
             visit((ast.getThenStatements().get(i)));
-            writer.write(";");
             if( i != ast.getThenStatements().size() - 1) newline(indent);
             else newline(--indent);
         }
@@ -152,7 +152,6 @@ public final class Generator implements Ast.Visitor<Void> {
             newline(++indent);
             for(int i = 0; i < ast.getElseStatements().size(); i++){
                 visit((ast.getElseStatements().get(i)));
-                writer.write(";");
                 if( i != ast.getElseStatements().size() - 1) newline(indent);
                 else newline(--indent);
             }
@@ -191,7 +190,6 @@ public final class Generator implements Ast.Visitor<Void> {
         newline(++indent);
         for(int i = 0; i <ast.getStatements().size(); i++){
             visit(ast.getStatements().get(i));
-            writer.write(";");
             if(i != ast.getStatements().size() - 1) newline(indent);
             else indent--;
         }
@@ -215,6 +213,7 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Statement.Return ast) {
         writer.write("return ");
         visit(ast.getValue());
+        writer.write(";");
         return null;
     }
 
