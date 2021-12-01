@@ -55,6 +55,73 @@ public class GeneratorTests {
                                 "",
                                 "}"
                         )
+                ),
+                Arguments.of("Multiple Globals and Functions",
+                        //VAR x: Integer;
+                        //VAR y: Decimal;
+                        //VAR z: String;
+                        //FUN f(): Integer DO RETURN x; END
+                        //FUN g(): Decimal DO RETURN y; END
+                        //FUN h(): String DO RETURN z; END
+                        //FUN main(): Integer DO END
+                        new Ast.Source(
+                                Arrays.asList(
+                                        new Ast.Global("x", "Integer", true, Optional.empty()),
+                                        new Ast.Global("y", "Decimal", true, Optional.empty()),
+                                        new Ast.Global("z", "String", true, Optional.empty())
+                                ),
+                                Arrays.asList(
+                                        init(
+                                                new Ast.Function("f", Arrays.asList(), Arrays.asList(), Optional.of("Integer"),
+                                                    Arrays.asList(new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "x")))),
+                                                ast -> ast.setFunction(new Environment.Function("f", "f", Arrays.asList(), Environment.Type.INTEGER, args -> Environment.NIL))
+                                        ),
+                                        init(
+                                                new Ast.Function("g", Arrays.asList(), Arrays.asList(), Optional.of("Integer"),
+                                                        Arrays.asList(new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "y")))),
+                                                ast -> ast.setFunction(new Environment.Function("g", "main", Arrays.asList(), Environment.Type.DECIMAL, args -> Environment.NIL))
+                                        ),
+                                        init(
+                                                new Ast.Function("h", Arrays.asList(), Arrays.asList(), Optional.of("Integer"),
+                                                        Arrays.asList(new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "z")))),
+                                                ast -> ast.setFunction(new Environment.Function("main", "h", Arrays.asList(), Environment.Type.STRING, args -> Environment.NIL))
+                                        ),
+                                        init(
+                                                new Ast.Function("main", Arrays.asList(), Arrays.asList(), Optional.of("Integer"),
+                                                        Arrays.asList()),
+                                                ast -> ast.setFunction(new Environment.Function("main", "main", Arrays.asList(), Environment.Type.INTEGER, args -> Environment.NIL))
+                                        )
+                                )
+                        ),
+                        String.join(System.lineSeparator(),
+                                "public class Main {",
+                                "",
+                                "    int x;",
+                                "    double y;",
+                                "    String z;",
+                                "",
+                                "    public static void main(String[] args) {",
+                                "        System.exit(new Main().main());",
+                                "    }",
+                                "",
+                                "    int f() {",
+                                "        return x;",
+                                "    }",
+                                "",
+                                "    int g() {",
+                                "        return y;",
+                                "    }",
+                                "",
+                                "    int h() {",
+                                "        return z;",
+                                "    }",
+                                "",
+                                "    int main() {",
+                                "        ",
+                                "    }",
+                                "",
+                                "}"
+                        )
                 )
         );
     }
@@ -253,6 +320,7 @@ public class GeneratorTests {
     private static void test(Ast ast, String expected) {
         StringWriter writer = new StringWriter();
         new Generator(new PrintWriter(writer)).visit(ast);
+        System.out.println(writer.toString());
         Assertions.assertEquals(expected, writer.toString());
     }
 

@@ -24,7 +24,6 @@ public final class Generator implements Ast.Visitor<Void> {
     }
 
     private void newline(int indent) {
-        this.indent = indent;
         writer.println();
         for (int i = 0; i < indent; i++) {
             writer.write("    ");
@@ -34,24 +33,31 @@ public final class Generator implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Source ast) {
         writer.write("public class Main {");
-        newline(indent);
-        newline(indent + 1);
+
+        indent++;
+
+        if (!ast.getGlobals().isEmpty()) newline(0);
         for(Ast.Global globes : ast.getGlobals()){
-            visit(globes);
             newline(indent);
+            visit(globes);
         }
-        writer.write("public static void main(String[] args) {");
-        newline(indent + 1);
-        writer.write("System.exit(new Main().main());");
-        newline(indent - 1);
-        writer.write("}");
 
         newline(0);
-        newline(indent + 1);
+        newline(indent);
+        writer.write("public static void main(String[] args) {");
+        newline(++indent);
+        writer.write("System.exit(new Main().main());");
+        newline(--indent);
+        writer.write("}");
+
         for(Ast.Function function : ast.getFunctions()){
+            newline(0);
+            newline(indent);
             visit(function);
         }
-        newline(indent - 1);
+
+        newline(0);
+        newline(--indent);
         writer.write("}");
         return null;
     }
@@ -83,15 +89,14 @@ public final class Generator implements Ast.Visitor<Void> {
                 if(i != ast.getParameters().size() - 1) writer.write(", ");
             }
             writer.write(")" + " {");
-            newline(indent + 1);
+            newline(++indent);
             for(int i = 0 ; i < ast.getStatements().size(); i++){
                 visit(ast.getStatements().get(i));
                 writer.write(";");
                 if(i != ast.getStatements().size() - 1) newline(indent);
             }
-            newline(indent - 1);
+            newline(--indent);
             writer.write("}");
-            newline(indent - 1);
         }
         return null;
     }
@@ -134,22 +139,22 @@ public final class Generator implements Ast.Visitor<Void> {
         writer.write("if" + " (");
         visit(ast.getCondition());
         writer.write(")" + " {");
-        newline(indent + 1);
+        newline(++indent);
         for(int i = 0; i < ast.getThenStatements().size(); i++){
             visit((ast.getThenStatements().get(i)));
             writer.write(";");
-            if( i != ast.getThenStatements().size() - 1) newline( indent);
-            else newline(indent - 1);
+            if( i != ast.getThenStatements().size() - 1) newline(indent);
+            else newline(--indent);
         }
         writer.write("}");
         if(ast.getElseStatements().size() != 0){
             writer.write(" else {");
-            newline(indent + 1);
+            newline(++indent);
             for(int i = 0; i < ast.getElseStatements().size(); i++){
                 visit((ast.getElseStatements().get(i)));
                 writer.write(";");
-                if( i != ast.getElseStatements().size() - 1) newline( indent);
-                else newline(indent - 1);
+                if( i != ast.getElseStatements().size() - 1) newline(indent);
+                else newline(--indent);
             }
             writer.write("}");
         }
@@ -162,13 +167,13 @@ public final class Generator implements Ast.Visitor<Void> {
         writer.write("switch (");
         visit(ast.getCondition());
         writer.write(") {");
-        newline(indent + 1);
+        newline(++indent);
         for(int i = 0; i < ast.getCases().size(); i++){
             visit(ast.getCases().get(i));
             if(i != ast.getCases().size() - 1){
                 newline(indent);
             }
-            else newline(indent - 1);
+            else newline(--indent);
         }
         writer.write("}");
         return null;
@@ -183,7 +188,7 @@ public final class Generator implements Ast.Visitor<Void> {
             writer.write("default" );
         }
         writer.write(":");
-        newline(indent + 1);
+        newline(++indent);
         for(int i = 0; i <ast.getStatements().size(); i++){
             visit(ast.getStatements().get(i));
             writer.write(";");
@@ -196,11 +201,11 @@ public final class Generator implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Statement.While ast) { //TODO: havent tested yet
         writer.write("while" + " (" + ast.getCondition() + ")" + " {");
-        newline(indent + 1);
+        newline(++indent);
         for(int i = 0; i < ast.getStatements().size(); i++){
             visit(ast.getStatements().get(i));
             if(i != ast.getStatements().size() - 1) newline(indent);
-            else newline(indent - 1);
+            else newline(--indent);
         }
         writer.write("}");
         return null;
