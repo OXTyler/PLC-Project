@@ -76,7 +76,7 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Global ast) {
         if(!ast.getMutable()) writer.write("final ");
         writer.write(Environment.getType(ast.getTypeName()).getJvmName());
-        if(ast.getValue().isPresent() && Ast.Expression.PlcList.class != null){
+        if(ast.getValue().isPresent() && ast.getValue().get() instanceof Ast.Expression.PlcList){
             writer.write("[]");
         }
         writer.write( " " + ast.getName());

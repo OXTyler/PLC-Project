@@ -143,6 +143,18 @@ public class GeneratorTests {
         test(astList, expected);
     }
 
+    @Test
+    void testInitialization() {
+        // VAR name: Decimal = 1.0;
+        Ast.Expression.Literal expr1 = new Ast.Expression.Literal(new BigDecimal("1.0"));
+        expr1.setType(Environment.Type.DECIMAL);
+        Ast.Global global = new Ast.Global("name", "Decimal", true, Optional.of(expr1));
+        Ast.Global astList = init(global, ast -> ast.setVariable(new Environment.Variable("name", "name", Environment.Type.DECIMAL, true, Environment.create(new Double(1.0)))));
+
+        String expected = new String("double name = 1.0;");
+        test(astList, expected);
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource
     void testDeclarationStatement(String test, Ast.Statement.Declaration ast, String expected) {
