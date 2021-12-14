@@ -470,7 +470,11 @@ public final class Parser {
 
         } else if(match("(")) {
             Ast.Expression val = parseExpression();
-            if(match(")")) return new Ast.Expression.Group(val);
+            if (match(")"))  {
+                return new Ast.Expression.Group(val);
+            } else {
+                throwError("Missing closing parenthesis");
+            }
 
 
         } else if (peek(Token.Type.IDENTIFIER)){
@@ -521,7 +525,7 @@ public final class Parser {
         // check if there's an operator
         for (String operator : operators) {
             if (match(operator)) {
-
+                if (!tokens.has(0)) throwError("Missing right operand");
                 Ast.Expression right = parseExpression();
 
                 if (right instanceof Ast.Expression.Binary) {
