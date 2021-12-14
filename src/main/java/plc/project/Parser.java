@@ -196,6 +196,7 @@ public final class Parser {
         List<Ast.Statement> statements = new ArrayList<>();
 
         while (!(peek("END") || peek("CASE") || peek("DEFAULT") || peek("ELSE"))) {
+            if (!tokens.has(0)) throwError("Missing END");
             statements.add(parseStatement());
         }
 
@@ -495,7 +496,6 @@ public final class Parser {
             }
             return val;
         }
-        System.out.println(tokens.get(0).getLiteral());
         throwError("Invalid Expression");
         return null; //wont get here
     }
