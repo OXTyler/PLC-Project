@@ -45,6 +45,7 @@ public final class Parser {
         List<Ast.Function> functions = new ArrayList<>();
         while(peek("LIST") || peek("VAR") || peek("VAL")) globals.add(parseGlobal());
         while(match("FUN")) functions.add(parseFunction());
+        if (peek("LIST") || peek("VAR") || peek("VAL")) throwError("Globals must come before functions");
         return new Ast.Source(globals, functions);
     }
 
