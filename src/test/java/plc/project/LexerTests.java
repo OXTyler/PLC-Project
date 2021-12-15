@@ -1,5 +1,6 @@
 package plc.project;
 
+import com.sun.org.apache.xpath.internal.Arg;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,7 +50,8 @@ public class LexerTests {
                 Arguments.of("Comma Separated", "1,234", false),
                 Arguments.of("Leading Zeros", "007", false),
                 Arguments.of("zero and more", "01234", false),
-                Arguments.of("Leading Zero", "01", false)
+                Arguments.of("Leading Zero", "01", false),
+                Arguments.of("Hyphen", "-", false)
         );
     }
 
@@ -72,7 +74,8 @@ public class LexerTests {
                 Arguments.of("Leading Decimal", ".5", false),
                 Arguments.of("Double Decimal", "1..0", false),
                 Arguments.of("Multiple Decimal Points", "1243.1234.1234", false),
-                Arguments.of("Multiple Decimals", "1.2.3", false)
+                Arguments.of("Multiple Decimals", "1.2.3", false),
+                Arguments.of("Number Method", "1.toString()", false)
 
         );
     }

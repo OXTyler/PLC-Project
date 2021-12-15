@@ -78,57 +78,69 @@ public final class Lexer {
 
     public Token lexNumber() {
         boolean foundDecimalPoint = false;
-
-        // take care of cases of first char being '-'or '0'
-        if (peek("-")) {
-            chars.advance();
-            if (peek("0")) { // if -0
-                chars.advance();
-                if (peek(".")) { // must be decimal
-                    chars.advance();
-                    foundDecimalPoint = true;
-                } else {
+        if(match("-")) {
+            if(match("0")) {
+                if(match("\\.")) {
+                    while(chars.has(0)){
+                        if(!match("[0-9]")) {
+                            throw new ParseException("Invalid Decimal", chars.index++);
+                        }
+                    }
                     return chars.emit(Token.Type.DECIMAL);
+                } else{
+                    throw new ParseException("Invalid Decimal", chars.index + 1);
+                }
+
+            } else{ //could be int or decimal
+                match("[1-9]");
+                while(chars.has(0)){
+                    if(match("\\.")){
+                        if(foundDecimalPoint) throw new ParseException("Too many Decimals", chars.index);
+                        foundDecimalPoint = true;
+                        if(!peek("[0-9]")) throw new ParseException("Invalid Decimal", chars.index++);
+                    }
+                    if(!match("[0-9]")){
+                        if(peek("[a-zA-Z]") || peek("\"|\'"))
+                            throw new ParseException("Invalid Number", chars.index++);
+                        else
+                            return foundDecimalPoint ? chars.emit(Token.Type.DECIMAL) : chars.emit(Token.Type.INTEGER);
+                    }
+                }
+                return foundDecimalPoint ? chars.emit(Token.Type.DECIMAL) : chars.emit(Token.Type.INTEGER);
+            }
+
+        }
+        if(match("0")){
+            if(!peek("\\.") && !chars.has(1)) return chars.emit(Token.Type.INTEGER);
+            else if(!peek("\\.") && chars.has(1)) throw new ParseException("Invalid Integer", chars.index++);
+            match("\\.");
+            if(!chars.has(0)) throw new ParseException("invalid Decimal", chars.index);
+            while(chars.has(0)){
+                if(!match("[0-9]")){
+                    if(peek("[a-zA-Z]") || peek("\"|\'"))
+                        throw new ParseException("Invalid Number", chars.index++);
+                    else
+                        return foundDecimalPoint ? chars.emit(Token.Type.DECIMAL) : chars.emit(Token.Type.INTEGER);
                 }
             }
-        } else if (peek("0")) { // if 0, must be just 0 or 0.
-            chars.advance();
-            if (chars.has(1)) { // if more than one char left
-                if (match( ".")) { // must be decimal point
-                    foundDecimalPoint = true;
-                } else {
-                    return chars.emit(Token.Type.INTEGER);
-                }
-            } else {
-                return chars.emit(Token.Type.INTEGER); // return 0 because no more chars left
+            return chars.emit(Token.Type.DECIMAL);
+        }
+        if(!match("[1-9]")) throw new ParseException("Invalid Number", chars.index++);
+        while(chars.has(0)){
+            if(match("\\.")){
+                if(foundDecimalPoint) throw new ParseException("Too many Decimals P2", chars.index);
+                foundDecimalPoint = true;
+                if(!peek("[0-9]")) throw new ParseException("Invalid Decimal", chars.index++);
+            }
+            if(!match("[0-9]")){
+                if(peek("[a-zA-Z]") || peek("\"|\'"))
+                    throw new ParseException("Invalid Number", chars.index++);
+                else
+                    return foundDecimalPoint ? chars.emit(Token.Type.DECIMAL) : chars.emit(Token.Type.INTEGER);
             }
         }
+        return foundDecimalPoint ? chars.emit(Token.Type.DECIMAL) : chars.emit(Token.Type.INTEGER);
 
-        while (chars.has(0)) {
-            String pattern = (foundDecimalPoint) ? "[0-9]" : "\\.|[0-9]";
-
-            if (peek("\\.")) {
-                if (!chars.has(1)) {
-                    return chars.emit(Token.Type.DECIMAL);
-                }
-
-                if (!foundDecimalPoint) {
-                    foundDecimalPoint = true;
-                } else { // if already found a decimal point
-                    return chars.emit(Token.Type.DECIMAL);
-                }
-            }
-
-            if (peek(pattern)) {
-                chars.advance();
-            } else if (peek("[ ;\b\n\r\t]")) {
-                return chars.emit((foundDecimalPoint) ? Token.Type.DECIMAL : Token.Type.INTEGER);
-            } else {
-                return chars.emit((foundDecimalPoint) ? Token.Type.DECIMAL : Token.Type.INTEGER);
-            }
-        }
-
-        return chars.emit((foundDecimalPoint) ? Token.Type.DECIMAL : Token.Type.INTEGER);
     }
 
     public Token lexCharacter() {
