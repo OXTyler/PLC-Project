@@ -127,6 +127,32 @@ public class GeneratorTests {
     }
 
     @Test
+    void testFunction() {
+        //FUN func(x: Integer, y: Decimal, z: String) DO
+        //    print(x);
+        //    print(y);
+        //    print(z);
+        //END
+        Ast.Function func = new Ast.Function("func", Arrays.asList("x", "y", "z"), Arrays.asList("Integer", "Decimal", "String"), Optional.empty(),
+                Arrays.asList(
+                        new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "x")),
+                        new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "y")),
+                        new Ast.Statement.Return(new Ast.Expression.Access(Optional.empty(), "z"))
+                )
+        );
+
+        String expected = String.join(System.lineSeparator(),
+                "void func(int x, double y, String z) {",
+                "    return x;",
+                "    return y;",
+                "    return z;",
+                "}"
+                );
+
+        test(func, expected);
+    }
+
+    @Test
     void testList() {
         // LIST list: Decimal = [1.0, 1.5, 2.0];
         Ast.Expression.Literal expr1 = new Ast.Expression.Literal(new BigDecimal("1.0"));
@@ -140,6 +166,18 @@ public class GeneratorTests {
         Ast.Global astList = init(global, ast -> ast.setVariable(new Environment.Variable("list", "list", Environment.Type.DECIMAL, true, Environment.create(Arrays.asList(new Double(1.0), new Double(1.5), new Double(2.0))))));
 
         String expected = new String("double[] list = {1.0, 1.5, 2.0};");
+        test(astList, expected);
+    }
+
+    @Test
+    void testInitialization() {
+        // VAR name: Decimal = 1.0;
+        Ast.Expression.Literal expr1 = new Ast.Expression.Literal(new BigDecimal("1.0"));
+        expr1.setType(Environment.Type.DECIMAL);
+        Ast.Global global = new Ast.Global("name", "Decimal", true, Optional.of(expr1));
+        Ast.Global astList = init(global, ast -> ast.setVariable(new Environment.Variable("name", "name", Environment.Type.DECIMAL, true, Environment.create(new Double(1.0)))));
+
+        String expected = new String("double name = 1.0;");
         test(astList, expected);
     }
 
@@ -271,6 +309,29 @@ public class GeneratorTests {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource
+    void testWhileStatement(String test, Ast.Statement.While ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testWhileStatement() {
+        return Stream.of(
+                Arguments.of("Empty Statements",
+                        // WHILE cond DO END
+                        new Ast.Statement.While(
+                                init(new Ast.Expression.Access(Optional.empty(), "cond"), ast -> ast.setVariable(new Environment.Variable("cond", "expr", Environment.Type.BOOLEAN, true, Environment.NIL))),
+                                Arrays.asList()
+                        ),
+                        String.join(System.lineSeparator(),
+                                "while (cond) {",
+                                "    ",
+                                "}"
+                        )
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
     void testBinaryExpression(String test, Ast.Expression.Binary ast, String expected) {
         test(ast, expected);
     }
@@ -320,7 +381,7 @@ public class GeneratorTests {
     private static void test(Ast ast, String expected) {
         StringWriter writer = new StringWriter();
         new Generator(new PrintWriter(writer)).visit(ast);
-        System.out.println(writer.toString());
+        System.out.println(writer);
         Assertions.assertEquals(expected, writer.toString());
     }
 

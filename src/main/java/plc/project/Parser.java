@@ -44,7 +44,8 @@ public final class Parser {
         List<Ast.Global> globals = new ArrayList<>();
         List<Ast.Function> functions = new ArrayList<>();
         while(peek("LIST") || peek("VAR") || peek("VAL")) globals.add(parseGlobal());
-        while(match("FUN")) functions.add(parseFunction());
+        while(peek("FUN")) functions.add(parseFunction());
+        if (peek("LIST") || peek("VAR") || peek("VAL")) throwError("Globals must come before functions");
         return new Ast.Source(globals, functions);
     }
 
@@ -142,21 +143,13 @@ public final class Parser {
         List<String> parameterTypes = new ArrayList<>();
         List<Ast.Statement> statements;
 
-        if (peek(Token.Type.IDENTIFIER, "(")) {
+        if (match("FUN") && peek(Token.Type.IDENTIFIER, "(")) {
 
             name = tokens.get(0).getLiteral();
             match(Token.Type.IDENTIFIER, "(");
             if (!match(")")) {
 
-                if (!peek(Token.Type.IDENTIFIER, ":", Token.Type.IDENTIFIER)) throwError("Invalid Function");
-                parameters.add(tokens.get(0).getLiteral());
-                tokens.advance();
-                tokens.advance();
-                parameterTypes.add(tokens.get(0).getLiteral());
-                tokens.advance();
-
                 while (peek(Token.Type.IDENTIFIER, ":", Token.Type.IDENTIFIER, ",")) {
-
                     parameters.add(tokens.get(0).getLiteral());
                     tokens.advance();
                     tokens.advance();
@@ -172,8 +165,9 @@ public final class Parser {
                 parameterTypes.add(tokens.get(0).getLiteral());
                 tokens.advance();
 
+                if (!match(")")) throwError("Missing function argument closing parentheses");
             }
-            if(match(":")){
+            if (match(":")){
                 if(!peek(Token.Type.IDENTIFIER)) throwError("Invalid Function Type");
                 funcType = tokens.get(0).getLiteral();
                 tokens.advance();
@@ -188,8 +182,6 @@ public final class Parser {
             }
 
             throwError("Missing END");
-
-
         }
 
         throwError("Invalid Function");
@@ -204,6 +196,7 @@ public final class Parser {
         List<Ast.Statement> statements = new ArrayList<>();
 
         while (!(peek("END") || peek("CASE") || peek("DEFAULT") || peek("ELSE"))) {
+            if (!tokens.has(0)) throwError("Missing END");
             statements.add(parseStatement());
         }
 
@@ -477,7 +470,11 @@ public final class Parser {
 
         } else if(match("(")) {
             Ast.Expression val = parseExpression();
-            if(match(")")) return new Ast.Expression.Group(val);
+            if (match(")"))  {
+                return new Ast.Expression.Group(val);
+            } else {
+                throwError("Missing closing parenthesis");
+            }
 
 
         } else if (peek(Token.Type.IDENTIFIER)){
@@ -503,7 +500,6 @@ public final class Parser {
             }
             return val;
         }
-        System.out.println(tokens.get(0).getLiteral());
         throwError("Invalid Expression");
         return null; //wont get here
     }
@@ -529,7 +525,7 @@ public final class Parser {
         // check if there's an operator
         for (String operator : operators) {
             if (match(operator)) {
-
+                if (!tokens.has(0)) throwError("Missing right operand");
                 Ast.Expression right = parseExpression();
 
                 if (right instanceof Ast.Expression.Binary) {

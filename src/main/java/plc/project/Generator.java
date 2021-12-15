@@ -3,6 +3,7 @@ package plc.project;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 
 public final class Generator implements Ast.Visitor<Void> {
 
@@ -21,6 +22,15 @@ public final class Generator implements Ast.Visitor<Void> {
                 writer.write(object.toString());
             }
         }
+    }
+
+    private void print(List<Ast.Statement> statements) {
+        newline(++indent);
+        for(int i = 0; i < statements.size(); i++){
+            visit(statements.get(i));
+            if( i != statements.size() - 1) newline(indent);
+        }
+        newline(--indent);
     }
 
     private void newline(int indent) {
@@ -66,7 +76,7 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Global ast) {
         if(!ast.getMutable()) writer.write("final ");
         writer.write(Environment.getType(ast.getTypeName()).getJvmName());
-        if(ast.getValue().isPresent() && Ast.Expression.PlcList.class != null){
+        if(ast.getValue().isPresent() && ast.getValue().get() instanceof Ast.Expression.PlcList){
             writer.write("[]");
         }
         writer.write( " " + ast.getName());
@@ -83,27 +93,26 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Function ast) {
         if(ast.getReturnTypeName().isPresent()){
             writer.write(Environment.getType(ast.getReturnTypeName().get()).getJvmName() + " ");
-            writer.write(ast.getName() + "(");
-            for(int i = 0; i < ast.getParameters().size(); i++){
-                writer.write(Environment.getType(ast.getParameterTypeNames().get(i)).getJvmName() + " " + ast.getParameters().get(i));
-                if(i != ast.getParameters().size() - 1) writer.write(", ");
-            }
-            writer.write(")" + " {");
-            newline(++indent);
-            for(int i = 0 ; i < ast.getStatements().size(); i++){
-                visit(ast.getStatements().get(i));
-                writer.write(";");
-                if(i != ast.getStatements().size() - 1) newline(indent);
-            }
-            newline(--indent);
-            writer.write("}");
+        } else {
+            writer.write("void ");
         }
+
+        writer.write(ast.getName() + "(");
+        for(int i = 0; i < ast.getParameters().size(); i++){
+            writer.write(Environment.getType(ast.getParameterTypeNames().get(i)).getJvmName() + " " + ast.getParameters().get(i));
+            if(i != ast.getParameters().size() - 1) writer.write(", ");
+        }
+        writer.write(")" + " {");
+        print(ast.getStatements());
+        writer.write("}");
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Statement.Expression ast) {
         visit(ast.getExpression());
+        writer.write(";");
         return null;
     }
 
@@ -131,6 +140,7 @@ public final class Generator implements Ast.Visitor<Void> {
         visit(ast.getReceiver());
         writer.write(" = ");
         visit(ast.getValue());
+        writer.write(";");
         return null;
     }
 
@@ -139,23 +149,13 @@ public final class Generator implements Ast.Visitor<Void> {
         writer.write("if" + " (");
         visit(ast.getCondition());
         writer.write(")" + " {");
-        newline(++indent);
-        for(int i = 0; i < ast.getThenStatements().size(); i++){
-            visit((ast.getThenStatements().get(i)));
-            writer.write(";");
-            if( i != ast.getThenStatements().size() - 1) newline(indent);
-            else newline(--indent);
-        }
+
+        print(ast.getThenStatements());
         writer.write("}");
-        if(ast.getElseStatements().size() != 0){
+
+        if (ast.getElseStatements().size() != 0){
             writer.write(" else {");
-            newline(++indent);
-            for(int i = 0; i < ast.getElseStatements().size(); i++){
-                visit((ast.getElseStatements().get(i)));
-                writer.write(";");
-                if( i != ast.getElseStatements().size() - 1) newline(indent);
-                else newline(--indent);
-            }
+            print(ast.getElseStatements());
             writer.write("}");
         }
 
@@ -170,11 +170,8 @@ public final class Generator implements Ast.Visitor<Void> {
         newline(++indent);
         for(int i = 0; i < ast.getCases().size(); i++){
             visit(ast.getCases().get(i));
-            if(i != ast.getCases().size() - 1){
-                newline(indent);
-            }
-            else newline(--indent);
         }
+        newline(--indent);
         writer.write("}");
         return null;
     }
@@ -184,30 +181,33 @@ public final class Generator implements Ast.Visitor<Void> {
         if(ast.getValue().isPresent()){
             writer.write("case ");
             visit(ast.getValue().get());
+            writer.write(":");
+
+            print(ast.getStatements());
         } else {
             writer.write("default" );
+            writer.write(":");
+            // don't use print() because default be built different
+            newline(++indent);
+            for (int i = 0; i < ast.getStatements().size(); i++) {
+                visit(ast.getStatements().get(i));
+                if( i != ast.getStatements().size() - 1) newline(indent);
+            }
+            --indent;
         }
-        writer.write(":");
-        newline(++indent);
-        for(int i = 0; i <ast.getStatements().size(); i++){
-            visit(ast.getStatements().get(i));
-            writer.write(";");
-            if(i != ast.getStatements().size() - 1) newline(indent);
-            else indent--;
-        }
+
         return null;
     }
 
     @Override
-    public Void visit(Ast.Statement.While ast) { //TODO: havent tested yet
-        writer.write("while" + " (" + ast.getCondition() + ")" + " {");
-        newline(++indent);
-        for(int i = 0; i < ast.getStatements().size(); i++){
-            visit(ast.getStatements().get(i));
-            if(i != ast.getStatements().size() - 1) newline(indent);
-            else newline(--indent);
-        }
+    public Void visit(Ast.Statement.While ast) {
+        writer.write("while" + " (");
+        visit(ast.getCondition());
+        writer.write(")" + " {");
+
+        print(ast.getStatements());
         writer.write("}");
+
         return null;
     }
 
@@ -215,6 +215,7 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Statement.Return ast) {
         writer.write("return ");
         visit(ast.getValue());
+        writer.write(";");
         return null;
     }
 
@@ -222,11 +223,9 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Expression.Literal ast) { //TODO: consider BigDecimal
         if(ast.getType().getJvmName().equals("String")){
             writer.write("\"" + ast.getLiteral().toString() + "\"");
-        }
-        else if(ast.getType().getJvmName().equals("char")){
+        } else if (ast.getType().getJvmName().equals("char")){
             writer.write("'" + ast.getLiteral().toString() + "'");
-        }
-        else{
+        } else {
             writer.write(ast.getLiteral().toString());
         }
 
@@ -243,26 +242,24 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Binary ast) {
-        if(!ast.getOperator().equals("^")){
+        if (!ast.getOperator().equals("^")){
             visit(ast.getLeft());
             writer.write(" " + ast.getOperator() + " ");
-            visit(ast.getRight());
-        }
-        else{
+        } else {
             writer.write("Math.pow(");
             visit(ast.getLeft());
             writer.write(", ");
-            visit(ast.getRight());
         }
+        visit(ast.getRight());
         return null;
     }
 
     @Override
     public Void visit(Ast.Expression.Access ast) {
-        if(!ast.getOffset().isPresent()){
+        if (!ast.getOffset().isPresent()){
             writer.write(ast.getName());
         }
-        else{
+        else {
             writer.write(ast.getName() + "[");
             visit(ast.getOffset().get());
             writer.write("]");
@@ -293,7 +290,4 @@ public final class Generator implements Ast.Visitor<Void> {
         writer.write("}");
         return null;
     }
-
-
-
 }
